@@ -1,0 +1,6 @@
+# Local extraction of blockbuilder.zip for inspection — not tracked.
+# The zip file itself is the source of truth in this repo.
+blockbuilder_extracted/
+
+# Never commit live credentials
+config.json
