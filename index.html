@@ -361,6 +361,73 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .ds-status.err{color:var(--red)}
 .ds-status.info{color:var(--text-dim)}
 
+/* ── DS shell (sidebar + edit pane) ── */
+.modal.xlarge{width:1080px;max-width:97vw;padding:0;display:flex;flex-direction:column;max-height:90vh}
+.ds-shell{overflow:hidden}
+.ds-shell-header{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+.ds-shell-header h2{margin:0;font-size:16px;color:var(--text-bright)}
+.ds-shell-header .modal-sub{margin-top:4px}
+.ds-close-btn{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:4px 10px;border-radius:var(--radius);line-height:1}
+.ds-close-btn:hover{color:var(--red);background:var(--surface2)}
+.ds-shell-body{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* nav (left) */
+.ds-nav{width:280px;min-width:280px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.ds-nav-search{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.ds-nav-search input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius);font-size:12px;font-family:var(--font-ui)}
+.ds-nav-search input:focus{outline:none;border-color:var(--primary)}
+.ds-nav-refresh{background:none}
+.ds-nav-section{display:flex;flex-direction:column;flex:1;min-height:0;border-bottom:1px solid var(--border)}
+.ds-nav-section:last-child{border-bottom:none}
+.ds-nav-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.ds-nav-title{display:flex;align-items:center;gap:6px}
+.ds-nav-count{display:inline-block;background:var(--surface3);color:var(--text-dim);font-size:9px;padding:1px 6px;border-radius:99px;font-weight:600}
+.ds-nav-pill{display:inline-block;background:var(--accent-dim);color:var(--text-bright);font-size:8px;padding:1px 6px;border-radius:99px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.ds-nav-new{background:none;border:1px solid var(--border2);color:var(--text-dim);width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:13px;line-height:1;font-weight:700;font-family:var(--font-ui);transition:all .12s}
+.ds-nav-new:hover{border-color:var(--primary);color:var(--primary)}
+.ds-nav-list{flex:1;overflow:auto;padding:4px}
+.ds-nav-item{display:flex;flex-direction:column;gap:2px;padding:6px 10px;cursor:pointer;border-radius:var(--radius);font-size:12px;color:var(--text);border:1px solid transparent;transition:all .1s}
+.ds-nav-item:hover{background:var(--surface2)}
+.ds-nav-item.active{background:var(--primary-bg);color:var(--primary);border-color:#00d4aa28}
+.ds-nav-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-nav-item-meta{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-nav-item.active .ds-nav-item-meta{color:var(--primary-dim)}
+.ds-nav-empty{padding:14px;text-align:center;color:var(--text-dim);font-size:11px;font-style:italic}
+
+/* pane (right) */
+.ds-pane{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.ds-pane-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-dim);text-align:center;gap:14px;padding:24px}
+.ds-empty-icon{width:48px;height:48px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-dim)}
+.ds-pane-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.ds-pane-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ds-pane-title .kind{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:700}
+.ds-pane-title .name{font-size:15px;color:var(--text-bright);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-pane-title .id{font-size:10px;color:var(--text-dim);font-family:var(--font-mono)}
+.ds-pane-actions{display:flex;align-items:center;gap:8px}
+.ds-pane-body{flex:1;overflow:auto;padding:18px 20px}
+.ds-pane-body .form-group{margin-bottom:14px}
+.ds-pane-body .form-group label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px}
+.ds-pane-body input[type=text],
+.ds-pane-body input[type=number],
+.ds-pane-body input[type=password],
+.ds-pane-body select,
+.ds-pane-body textarea{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui)}
+.ds-pane-body textarea{font-family:var(--font-mono);font-size:12px;min-height:120px;resize:vertical}
+.ds-pane-body input:focus,.ds-pane-body select:focus,.ds-pane-body textarea:focus{outline:none;border-color:var(--primary)}
+.ds-pane-foot{display:flex;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.ds-pane-foot .ds-status{flex:1;font-size:12px}
+.ds-pane-row{display:flex;gap:10px}
+.ds-pane-row .form-group{flex:1}
+.ds-pane-source-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ds-pane-source-row select{flex:1}
+.ds-pane-source-row input[type=text]{flex:0 0 140px}
+.ds-pane-source-row .icon-btn{padding:4px 8px;font-size:14px;color:var(--red)}
+.ds-add-source{background:var(--surface2);border:1px dashed var(--border2);color:var(--text-dim);padding:6px 10px;border-radius:var(--radius);cursor:pointer;font-size:11px;font-family:var(--font-ui);transition:all .15s}
+.ds-add-source:hover{border-color:var(--primary);color:var(--primary)}
+.ds-readonly-note{font-size:11px;color:var(--text-dim);font-style:italic;margin-top:-8px;margin-bottom:10px}
+.btn.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #4a1a1a}
+.btn.btn-danger:hover{background:#3e1313}
+
 /* "+ Data" button in sidebar footer */
 #btn-new-ds{width:100%;margin-top:6px;background:var(--surface2);border:1px dashed var(--border2);color:var(--text-dim);padding:8px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font-ui);transition:all .15s}
 #btn-new-ds:hover{border-color:var(--primary);color:var(--primary)}
@@ -1121,45 +1188,53 @@ function updateGhPill() {
   </div>
 </div>
 
-<!-- DS/Query Modal -->
+<!-- Datasources / Queries / Credentials Modal -->
 <div class="overlay" id="ds-overlay">
-  <div class="modal large">
-    <h2 id="ds-modal-title">+ New Datasource</h2>
-    <div class="modal-sub">Create a datasource or query on the connected portal. Test-run to preview before saving.</div>
-    <div class="ds-tabs" id="ds-tabs">
-      <button class="ds-tab active" id="ds-tab-datasource" onclick="switchDsTab('datasource')">Datasource</button>
-      <button class="ds-tab" id="ds-tab-query" onclick="switchDsTab('query')">Query (1.18)</button>
+  <div class="modal xlarge ds-shell">
+    <div class="ds-shell-header">
+      <div>
+        <h2>Datasources, Queries &amp; Credentials</h2>
+        <div class="modal-sub">Browse, create, and edit anything on the connected portal.</div>
+      </div>
+      <button class="ds-close-btn" onclick="closeDsModal()" title="Close">&#10005;</button>
     </div>
-    <div class="ds-form">
-      <div class="form-group">
-        <label>Name</label>
-        <input id="ds-name" type="text" placeholder="e.g. orders_by_state"/>
-      </div>
-      <div class="form-group">
-        <label>Credential / Connection</label>
-        <select id="ds-credential">
-          <option value="">Loading credentials&hellip;</option>
-        </select>
-      </div>
-      <div class="form-group" id="ds-source-wrap">
-        <label>Source Datasource <span style="color:var(--text-dim);font-weight:400">(query mode)</span></label>
-        <select id="ds-source">
-          <option value="">Select a datasource&hellip;</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>SQL <span style="color:var(--text-dim);font-weight:400">(use :colname for shortcodes)</span></label>
-        <textarea id="ds-sql" placeholder="SELECT * FROM table_name LIMIT 100"></textarea>
-      </div>
-      <div class="ds-preview" id="ds-preview">
-        <div class="ds-preview-empty">Click <strong>Test Run</strong> to preview the first 5 rows.</div>
-      </div>
-    </div>
-    <div class="modal-actions" style="align-items:center">
-      <span id="ds-status" class="ds-status info"></span>
-      <button class="btn btn-ghost" onclick="closeDsModal()">Cancel</button>
-      <button class="btn btn-ghost" id="ds-test-btn" onclick="testDsRun()">Test Run</button>
-      <button class="btn btn-primary" id="ds-save-btn" onclick="saveDs()">Create</button>
+    <div class="ds-shell-body">
+      <!-- LEFT: navigator -->
+      <aside class="ds-nav">
+        <div class="ds-nav-search">
+          <input id="ds-nav-search" type="text" placeholder="Filter..." oninput="BB.dsModal.filter(this.value)"/>
+          <button class="ds-nav-refresh icon-btn" onclick="BB.dsModal.refreshLists()" title="Refresh from portal">&#8635;</button>
+        </div>
+        <div class="ds-nav-section" data-kind="datasource">
+          <div class="ds-nav-head">
+            <span class="ds-nav-title">Datasources <span class="ds-nav-count" id="ds-count-datasource">0</span></span>
+            <button class="ds-nav-new" title="New datasource" onclick="BB.dsModal.newItem('datasource')">+</button>
+          </div>
+          <div class="ds-nav-list" id="ds-list-datasource"></div>
+        </div>
+        <div class="ds-nav-section" data-kind="query" id="ds-section-query">
+          <div class="ds-nav-head">
+            <span class="ds-nav-title">Queries <span class="ds-nav-pill v118-pill">1.18</span> <span class="ds-nav-count" id="ds-count-query">0</span></span>
+            <button class="ds-nav-new" title="New query" onclick="BB.dsModal.newItem('query')">+</button>
+          </div>
+          <div class="ds-nav-list" id="ds-list-query"></div>
+        </div>
+        <div class="ds-nav-section" data-kind="credential">
+          <div class="ds-nav-head">
+            <span class="ds-nav-title">Credentials <span class="ds-nav-count" id="ds-count-credential">0</span></span>
+            <button class="ds-nav-new" title="New credential" onclick="BB.dsModal.newItem('credential')">+</button>
+          </div>
+          <div class="ds-nav-list" id="ds-list-credential"></div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: editor pane (BB.dsModal.renderForm fills this) -->
+      <section class="ds-pane" id="ds-pane">
+        <div class="ds-pane-empty">
+          <div class="ds-empty-icon">&#9711;</div>
+          <p>Select an item on the left,<br/>or click <strong>+</strong> to create something new.</p>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -2655,86 +2730,503 @@ function esc(str) {
     setTimeout(function() { window.closeMigrateModal(); BB.refreshMigrateButton(); }, 1200);
   };
 
-  // ── DS / Query creation modal ─────────────────────────────────────────────
-  var _dsState = { mode: 'datasource' };
+  // ═══════════════════════════════════════════════════════════════════════
+  //  Datasources / Queries / Credentials modal
+  //  Sidebar list + right edit pane. Full CRUD against /api/datasources,
+  //  /api/queries (1.18), and /api/credentials.
+  // ═══════════════════════════════════════════════════════════════════════
+  var DS = BB.dsModal = {
+    state: {
+      // Lists straight from the portal (full payloads, not the trimmed registry shape)
+      datasources: [],
+      queries:     [],
+      credentials: [],
+      credentialTypes: [],   // GET /api/credentials_types result
+      // Currently-edited item
+      kind: null,            // 'datasource' | 'query' | 'credential'
+      id:   null,            // null when creating new
+      item: null,            // raw object loaded from API (for diffing)
+      filter: ''
+    }
+  };
 
+  // ── Fetch helpers ────────────────────────────────────────────────────────
+  function dsFetch(path, opts) {
+    return fetch('/api/proxy' + path, opts || {}).then(function(r) {
+      return r.text().then(function(t) {
+        var data = null;
+        try { data = t ? JSON.parse(t) : null; } catch (_) { data = t; }
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+  function dsErrorText(res, fallback) {
+    if (res && res.data) {
+      if (typeof res.data === 'string') return res.data;
+      if (res.data.detail) return typeof res.data.detail === 'string'
+        ? res.data.detail
+        : JSON.stringify(res.data.detail);
+      if (res.data.error)  return res.data.error;
+    }
+    return fallback || ('HTTP ' + (res && res.status));
+  }
+
+  // Backwards-compat shim — old code paths still call BB.updateDsTabs() after
+  // version detect. Now it just toggles the Queries section visibility.
   BB.updateDsTabs = function() {
-    var queryTab = document.getElementById('ds-tab-query');
-    if (queryTab) queryTab.style.display = (BB.activeVersion() === '1.18') ? '' : 'none';
-    // Hide source-select unless query mode
-    var srcWrap = document.getElementById('ds-source-wrap');
-    if (srcWrap) srcWrap.style.display = (_dsState.mode === 'query') ? '' : 'none';
+    var sec = document.getElementById('ds-section-query');
+    if (sec) sec.style.display = (BB.activeVersion() === '1.18') ? '' : 'none';
   };
+  // Old shortcode-popup paths still call these. They're now no-ops because
+  // the rebuilt modal owns its own credential/source rendering.
+  BB.populateDsCredentialsSelect = function() {};
+  BB.populateDsSourceSelect      = function() {};
 
-  BB.populateDsCredentialsSelect = function() {
-    var sel = document.getElementById('ds-credential');
-    if (!sel) return;
-    if (!BB.registry.credentials.length) {
-      sel.innerHTML = '<option value="">No credentials available</option>';
-      return;
-    }
-    sel.innerHTML = '<option value="">Select a credential&hellip;</option>' +
-      BB.registry.credentials.map(function(c) {
-        return '<option value="' + esc(c.id) + '">' + esc(c.name) + ' (' + esc(c.type || '') + ')</option>';
-      }).join('');
-  };
-
-  BB.populateDsSourceSelect = function() {
-    var sel = document.getElementById('ds-source');
-    if (!sel) return;
-    if (!BB.registry.datasources.length) {
-      sel.innerHTML = '<option value="">No datasources yet</option>';
-      return;
-    }
-    sel.innerHTML = '<option value="">Select a datasource&hellip;</option>' +
-      BB.registry.datasources.map(function(d) {
-        return '<option value="' + esc(d.id) + '">' + esc(d.name) + '</option>';
-      }).join('');
-  };
-
+  // ── Open / close ─────────────────────────────────────────────────────────
   window.openDsModal = function() {
-    _dsState = { mode: 'datasource', testResult: null };
-    document.getElementById('ds-name').value = '';
-    document.getElementById('ds-sql').value  = '';
-    document.getElementById('ds-status').textContent = '';
-    document.getElementById('ds-status').className   = 'ds-status info';
-    document.getElementById('ds-preview').innerHTML  = '<div class="ds-preview-empty">Click <strong>Test Run</strong> to preview the first 5 rows.</div>';
-    BB.populateDsCredentialsSelect();
-    BB.populateDsSourceSelect();
-    BB.updateDsTabs();
-    document.getElementById('ds-modal-title').textContent = '+ New Datasource';
-    document.getElementById('ds-tab-datasource').classList.add('active');
-    document.getElementById('ds-tab-query').classList.remove('active');
     document.getElementById('ds-overlay').classList.add('open');
-    setTimeout(function() { document.getElementById('ds-name').focus(); }, 50);
+    BB.updateDsTabs();
+    DS.refreshLists();
   };
-
   window.closeDsModal = function() {
     document.getElementById('ds-overlay').classList.remove('open');
   };
+  // Old name kept for any leftover call sites; routes to newItem instead.
+  window.switchDsTab = function(mode) { DS.newItem(mode === 'query' ? 'query' : 'datasource'); };
 
-  window.switchDsTab = function(mode) {
-    if (mode === 'query' && BB.activeVersion() !== '1.18') return;
-    _dsState.mode = mode;
-    document.getElementById('ds-tab-datasource').classList.toggle('active', mode === 'datasource');
-    document.getElementById('ds-tab-query').classList.toggle('active',     mode === 'query');
-    document.getElementById('ds-modal-title').textContent = mode === 'query' ? '+ New Query (1.18)' : '+ New Datasource';
-    BB.updateDsTabs();
+  // ── Refresh: pull all three lists (and credential types) from the portal ─
+  DS.refreshLists = function() {
+    var v118 = BB.activeVersion() === '1.18';
+    var jobs = [
+      dsFetch('/api/datasources').then(function(r){ DS.state.datasources = r.ok && Array.isArray(r.data) ? r.data : []; }),
+      dsFetch('/api/credentials').then(function(r){ DS.state.credentials = r.ok && Array.isArray(r.data) ? r.data : []; }),
+      dsFetch('/api/credentials_types').then(function(r){
+        if (!r.ok) { DS.state.credentialTypes = []; return; }
+        // API returns either an array of strings or an array of objects {type,...}
+        if (Array.isArray(r.data)) {
+          DS.state.credentialTypes = r.data.map(function(t) {
+            return typeof t === 'string' ? { type: t } : t;
+          });
+        } else { DS.state.credentialTypes = []; }
+      })
+    ];
+    if (v118) {
+      jobs.push(dsFetch('/api/queries').then(function(r){
+        if (!r.ok) { DS.state.queries = []; return; }
+        if (Array.isArray(r.data))         DS.state.queries = r.data;
+        else if (r.data && r.data.items)   DS.state.queries = r.data.items;
+        else                                DS.state.queries = [];
+      }));
+    } else {
+      DS.state.queries = [];
+    }
+    return Promise.all(jobs).then(DS.renderLists);
   };
 
-  function setDsStatus(msg, type) {
-    var s = document.getElementById('ds-status');
-    s.textContent = msg;
+  // ── Sidebar list rendering ───────────────────────────────────────────────
+  DS.filter = function(text) {
+    DS.state.filter = (text || '').toLowerCase();
+    DS.renderLists();
+  };
+  function passesFilter(label) {
+    if (!DS.state.filter) return true;
+    return String(label || '').toLowerCase().indexOf(DS.state.filter) !== -1;
+  }
+  DS.renderLists = function() {
+    BB.updateDsTabs();
+    // Datasources
+    var dsList = DS.state.datasources.filter(function(d) { return passesFilter(d.name) || passesFilter(d.id); });
+    document.getElementById('ds-count-datasource').textContent = dsList.length;
+    document.getElementById('ds-list-datasource').innerHTML = dsList.length
+      ? dsList.map(function(d) {
+          var active = (DS.state.kind === 'datasource' && DS.state.id === d.id) ? ' active' : '';
+          return '<div class="ds-nav-item' + active + '" onclick="BB.dsModal.selectItem(\'datasource\',\'' + esc(d.id) + '\')">' +
+                   '<span class="ds-nav-item-name">' + esc(d.name || '(unnamed)') + '</span>' +
+                   '<span class="ds-nav-item-meta">' + esc(d.id.slice(0, 8)) + '</span>' +
+                 '</div>';
+        }).join('')
+      : '<div class="ds-nav-empty">No datasources</div>';
+
+    // Queries (1.18 only)
+    var qList = DS.state.queries.filter(function(q) {
+      var label = q.name || q.raw_sql || q.id;
+      return passesFilter(label) || passesFilter(q.id);
+    });
+    document.getElementById('ds-count-query').textContent = qList.length;
+    document.getElementById('ds-list-query').innerHTML = qList.length
+      ? qList.map(function(q) {
+          var active = (DS.state.kind === 'query' && DS.state.id === q.id) ? ' active' : '';
+          var label  = q.name || (q.raw_sql ? q.raw_sql.slice(0, 60) : '(no sql)');
+          return '<div class="ds-nav-item' + active + '" onclick="BB.dsModal.selectItem(\'query\',\'' + esc(q.id) + '\')">' +
+                   '<span class="ds-nav-item-name">' + esc(label) + '</span>' +
+                   '<span class="ds-nav-item-meta">' + esc(q.id.slice(0, 8)) + '</span>' +
+                 '</div>';
+        }).join('')
+      : '<div class="ds-nav-empty">' + (BB.activeVersion() === '1.18' ? 'No queries' : 'Queries are 1.18-only') + '</div>';
+
+    // Credentials
+    var cList = DS.state.credentials.filter(function(c) {
+      return passesFilter(c.name) || passesFilter(c.type) || passesFilter(c.id);
+    });
+    document.getElementById('ds-count-credential').textContent = cList.length;
+    document.getElementById('ds-list-credential').innerHTML = cList.length
+      ? cList.map(function(c) {
+          var active = (DS.state.kind === 'credential' && DS.state.id === c.id) ? ' active' : '';
+          return '<div class="ds-nav-item' + active + '" onclick="BB.dsModal.selectItem(\'credential\',\'' + esc(c.id) + '\')">' +
+                   '<span class="ds-nav-item-name">' + esc(c.name || '(unnamed)') + '</span>' +
+                   '<span class="ds-nav-item-meta">' + esc(c.type || '') + '  \u00b7  ' + esc(c.id.slice(0, 8)) + '</span>' +
+                 '</div>';
+        }).join('')
+      : '<div class="ds-nav-empty">No credentials</div>';
+  };
+
+  // ── Open existing item: GET fresh, then render form ──────────────────────
+  DS.selectItem = function(kind, id) {
+    DS.state.kind = kind;
+    DS.state.id   = id;
+    DS.state.item = null;
+    DS.renderLists();
+    DS.renderForm({ loading: true });
+    var path = (kind === 'datasource') ? '/api/datasources/' + id
+             : (kind === 'query')      ? '/api/queries/'     + id
+             :                           '/api/credentials/' + id;
+    // /api/credentials has no GET-by-id in the doc; fall back to the list copy
+    var listFallback = (kind === 'credential')
+      ? Promise.resolve({ ok: true, data: DS.state.credentials.filter(function(c){return c.id === id;})[0] })
+      : null;
+    var req = (kind === 'credential')
+      ? dsFetch(path).then(function(r) { return r.ok ? r : listFallback; })
+      : dsFetch(path);
+    req.then(function(res) {
+      if (!res || !res.ok || !res.data) {
+        DS.renderForm({ error: dsErrorText(res, 'Failed to load') });
+        return;
+      }
+      DS.state.item = res.data;
+      DS.renderForm();
+    });
+  };
+
+  // ── Start a fresh new-item form ──────────────────────────────────────────
+  DS.newItem = function(kind) {
+    if (kind === 'query' && BB.activeVersion() !== '1.18') return;
+    DS.state.kind = kind;
+    DS.state.id   = null;
+    DS.state.item = null;
+    DS.renderLists();
+    DS.renderForm();
+  };
+
+  // ── Render the right pane based on current state ─────────────────────────
+  DS.renderForm = function(opts) {
+    opts = opts || {};
+    var pane = document.getElementById('ds-pane');
+    if (opts.loading) { pane.innerHTML = '<div class="ds-pane-empty"><p>Loading\u2026</p></div>'; return; }
+    if (opts.error)   { pane.innerHTML = '<div class="ds-pane-empty"><p style="color:var(--red)">' + esc(opts.error) + '</p></div>'; return; }
+    if (!DS.state.kind) {
+      pane.innerHTML =
+        '<div class="ds-pane-empty">' +
+          '<div class="ds-empty-icon">\u25CB</div>' +
+          '<p>Select an item on the left,<br/>or click <strong>+</strong> to create something new.</p>' +
+        '</div>';
+      return;
+    }
+    if (DS.state.kind === 'datasource') return DS.renderDatasourceForm();
+    if (DS.state.kind === 'query')      return DS.renderQueryForm();
+    if (DS.state.kind === 'credential') return DS.renderCredentialForm();
+  };
+
+  // Helper: header + footer scaffold, returns body-element so the form can append into it
+  function renderShell(opts) {
+    var pane = document.getElementById('ds-pane');
+    var isNew = DS.state.id == null;
+    var deleteBtn = (!isNew && opts.allowDelete !== false)
+      ? '<button class="btn btn-danger" onclick="BB.dsModal.deleteCurrent()">Delete</button>'
+      : '';
+    pane.innerHTML =
+      '<div class="ds-pane-header">' +
+        '<div class="ds-pane-title">' +
+          '<span class="kind">' + esc(opts.kindLabel) + (isNew ? ' \u00b7 new' : '') + '</span>' +
+          '<span class="name" id="ds-pane-name-display">' + esc(opts.name || (isNew ? 'New ' + opts.kindLabel.toLowerCase() : '(unnamed)')) + '</span>' +
+          (isNew ? '' : '<span class="id">' + esc(DS.state.id) + '</span>') +
+        '</div>' +
+        '<div class="ds-pane-actions">' + deleteBtn + '</div>' +
+      '</div>' +
+      '<div class="ds-pane-body" id="ds-pane-body"></div>' +
+      '<div class="ds-pane-foot">' +
+        '<span class="ds-status info" id="ds-pane-status"></span>' +
+        (opts.allowTest !== false ? '<button class="btn btn-ghost" id="ds-test-btn" onclick="BB.dsModal.testRun()">Test Run</button>' : '') +
+        '<button class="btn btn-ghost" onclick="closeDsModal()">Close</button>' +
+        '<button class="btn btn-primary" id="ds-save-btn" onclick="BB.dsModal.save()">' + (isNew ? 'Create' : 'Save changes') + '</button>' +
+      '</div>';
+    return document.getElementById('ds-pane-body');
+  }
+
+  function setPaneStatus(msg, type) {
+    var s = document.getElementById('ds-pane-status');
+    if (!s) return;
+    s.textContent = msg || '';
     s.className = 'ds-status ' + (type || 'info');
   }
 
-  function renderDsPreview(columns, rows) {
-    var pv = document.getElementById('ds-preview');
+  // ── Datasource form ──────────────────────────────────────────────────────
+  DS.renderDatasourceForm = function() {
+    var item = DS.state.item || {};
+    var name = item.name || '';
+    var sql  = item.sql  || '';
+    var conn = item.database_connection || { type: 'stored', id: '' };
+    var credId = (conn.type === 'stored') ? (conn.id || '') : '';
+    var body = renderShell({ kindLabel: 'Datasource', name: name, allowDelete: true, allowTest: true });
+
+    var credOpts = '<option value="">Select a credential\u2026</option>' +
+      DS.state.credentials.map(function(c) {
+        return '<option value="' + esc(c.id) + '"' + (c.id === credId ? ' selected' : '') + '>' +
+                 esc(c.name) + ' (' + esc(c.type || '') + ')' +
+               '</option>';
+      }).join('');
+
+    body.innerHTML =
+      '<div class="form-group">' +
+        '<label>Name</label>' +
+        '<input type="text" id="ds-f-name" value="' + esc(name) + '" placeholder="e.g. orders_by_state"/>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Credential / Connection</label>' +
+        '<select id="ds-f-credential">' + credOpts + '</select>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>SQL</label>' +
+        '<textarea id="ds-f-sql" placeholder="SELECT * FROM table_name LIMIT 100">' + esc(sql) + '</textarea>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Preview</label>' +
+        '<div class="ds-preview" id="ds-f-preview"><div class="ds-preview-empty">Click <strong>Test Run</strong> to preview the first 5 rows.</div></div>' +
+      '</div>';
+    setTimeout(function() { document.getElementById('ds-f-name').focus(); }, 30);
+  };
+
+  // ── Query form (1.18) ────────────────────────────────────────────────────
+  DS.renderQueryForm = function() {
+    var item    = DS.state.item || {};
+    var rawSql  = item.raw_sql  || '';
+    var name    = item.name     || '';   // queries can optionally be named
+    var sources = (item.datasources && item.datasources.length) ? item.datasources : [{ id: '', alias: 'main' }];
+    var body    = renderShell({ kindLabel: 'Query', name: (name || (rawSql ? rawSql.slice(0, 50) : '')), allowDelete: true, allowTest: true });
+
+    body.innerHTML =
+      '<div class="form-group">' +
+        '<label>Name <span style="color:var(--text-dim);font-weight:400;text-transform:none">(optional)</span></label>' +
+        '<input type="text" id="ds-f-name" value="' + esc(name) + '" placeholder="Leave blank if untitled"/>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Source Datasources</label>' +
+        '<div id="ds-f-sources"></div>' +
+        '<button class="ds-add-source" type="button" onclick="BB.dsModal.addSourceRow()">+ Add source</button>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Raw SQL <span style="color:var(--text-dim);font-weight:400;text-transform:none">(reference sources by their alias)</span></label>' +
+        '<textarea id="ds-f-sql" placeholder="SELECT * FROM main LIMIT 100">' + esc(rawSql) + '</textarea>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Preview</label>' +
+        '<div class="ds-preview" id="ds-f-preview"><div class="ds-preview-empty">Click <strong>Test Run</strong> to preview.</div></div>' +
+      '</div>';
+    DS._renderSourceRows(sources);
+  };
+
+  DS._renderSourceRows = function(sources) {
+    var host = document.getElementById('ds-f-sources');
+    if (!host) return;
+    if (!sources.length) sources = [{ id: '', alias: 'main' }];
+    host.innerHTML = sources.map(function(s, i) {
+      var dsOpts = '<option value="">Select a datasource\u2026</option>' +
+        DS.state.datasources.map(function(d) {
+          return '<option value="' + esc(d.id) + '"' + (d.id === s.id ? ' selected' : '') + '>' +
+                   esc(d.name) +
+                 '</option>';
+        }).join('');
+      return '<div class="ds-pane-source-row">' +
+               '<select data-i="' + i + '" data-field="id">' + dsOpts + '</select>' +
+               '<input type="text" data-i="' + i + '" data-field="alias" placeholder="alias" value="' + esc(s.alias || '') + '"/>' +
+               '<button class="icon-btn" type="button" onclick="BB.dsModal.removeSourceRow(' + i + ')" title="Remove">\u00d7</button>' +
+             '</div>';
+    }).join('');
+    // stash current values on element so add/remove can re-read them
+    host._sources = sources;
+  };
+  DS._readSourceRows = function() {
+    var host = document.getElementById('ds-f-sources');
+    if (!host) return [];
+    var rows = host.querySelectorAll('.ds-pane-source-row');
+    var out  = [];
+    rows.forEach(function(row) {
+      var id    = row.querySelector('[data-field=id]').value;
+      var alias = row.querySelector('[data-field=alias]').value.trim();
+      if (id || alias) out.push({ id: id, alias: alias || 'main' });
+    });
+    return out;
+  };
+  DS.addSourceRow = function() {
+    var current = DS._readSourceRows();
+    current.push({ id: '', alias: 'src' + (current.length + 1) });
+    DS._renderSourceRows(current);
+  };
+  DS.removeSourceRow = function(i) {
+    var current = DS._readSourceRows();
+    current.splice(i, 1);
+    DS._renderSourceRows(current);
+  };
+
+  // ── Credential form ──────────────────────────────────────────────────────
+  DS.renderCredentialForm = function() {
+    var item = DS.state.item || {};
+    var name = item.name || '';
+    var type = item.type || (DS.state.credentialTypes[0] && DS.state.credentialTypes[0].type) || '';
+    var data = item.data || {};
+    var tags = (item.tags || []).join(', ');
+    var body = renderShell({ kindLabel: 'Credential', name: name, allowDelete: true, allowTest: false });
+
+    var typeOpts = (DS.state.credentialTypes.length ? DS.state.credentialTypes : [{ type: type || 'postgresql' }])
+      .map(function(t) {
+        var v = t.type || t;
+        return '<option value="' + esc(v) + '"' + (v === type ? ' selected' : '') + '>' + esc(v) + '</option>';
+      }).join('');
+
+    body.innerHTML =
+      '<div class="form-group">' +
+        '<label>Name</label>' +
+        '<input type="text" id="ds-f-name" value="' + esc(name) + '" placeholder="e.g. Production Postgres"/>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Type</label>' +
+        '<select id="ds-f-type">' + typeOpts + '</select>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Connection data <span style="color:var(--text-dim);font-weight:400;text-transform:none">(JSON \u2014 fields depend on type)</span></label>' +
+        '<textarea id="ds-f-data" placeholder=\'{"host":"db.example.com","port":5432,"database":"prod","user":"...","password":"..."}\'>' + esc(JSON.stringify(data, null, 2)) + '</textarea>' +
+        (DS.state.id ? '<div class="ds-readonly-note">Note: the portal usually omits secrets (e.g. password) on read. Re-enter sensitive fields if you change them.</div>' : '') +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label>Tags <span style="color:var(--text-dim);font-weight:400;text-transform:none">(comma-separated)</span></label>' +
+        '<input type="text" id="ds-f-tags" value="' + esc(tags) + '" placeholder="production, analytics"/>' +
+      '</div>';
+    setTimeout(function() { document.getElementById('ds-f-name').focus(); }, 30);
+  };
+
+  // ── Save (create or update, dispatch by kind) ────────────────────────────
+  DS.save = function() {
+    if (DS.state.kind === 'datasource') return DS._saveDatasource();
+    if (DS.state.kind === 'query')      return DS._saveQuery();
+    if (DS.state.kind === 'credential') return DS._saveCredential();
+  };
+
+  DS._saveDatasource = function() {
+    var name = document.getElementById('ds-f-name').value.trim();
+    var sql  = document.getElementById('ds-f-sql').value.trim();
+    var cred = document.getElementById('ds-f-credential').value;
+    if (!name) { setPaneStatus('Name is required.', 'err'); return; }
+    if (!sql)  { setPaneStatus('SQL is required.',  'err'); return; }
+    if (!cred) { setPaneStatus('Credential is required.', 'err'); return; }
+    var body = { name: name, sql: sql, json_data: {}, database_connection: { type: 'stored', id: cred } };
+    var btn  = document.getElementById('ds-save-btn'); btn.disabled = true;
+    setPaneStatus('Saving\u2026', 'info');
+    var isNew = DS.state.id == null;
+    var req = isNew
+      ? dsFetch('/api/datasources',                   { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : dsFetch('/api/datasources/' + DS.state.id,    { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    req.then(function(res) {
+      btn.disabled = false;
+      if (!res.ok) { setPaneStatus(dsErrorText(res, 'Save failed'), 'err'); return; }
+      setPaneStatus('\u2713 Saved (' + (res.data.id || DS.state.id).slice(0, 8) + ')', 'ok');
+      if (isNew && res.data.id) DS.state.id = res.data.id;
+      DS.state.item = res.data;
+      DS.refreshLists().then(BB.loadRegistry);
+    }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
+  };
+
+  DS._saveQuery = function() {
+    var name    = (document.getElementById('ds-f-name').value || '').trim();
+    var rawSql  = document.getElementById('ds-f-sql').value.trim();
+    var sources = DS._readSourceRows();
+    if (!rawSql) { setPaneStatus('SQL is required.', 'err'); return; }
+    var body = { raw_sql: rawSql, datasources: sources };
+    if (name) body.name = name;   // only send name if user gave one
+    var btn  = document.getElementById('ds-save-btn'); btn.disabled = true;
+    setPaneStatus('Saving\u2026', 'info');
+    var isNew = DS.state.id == null;
+    var req = isNew
+      ? dsFetch('/api/queries',                  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : dsFetch('/api/queries/' + DS.state.id,   { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    req.then(function(res) {
+      btn.disabled = false;
+      if (!res.ok) { setPaneStatus(dsErrorText(res, 'Save failed'), 'err'); return; }
+      setPaneStatus('\u2713 Saved (' + ((res.data && res.data.id) || DS.state.id || '').slice(0, 8) + ')', 'ok');
+      if (isNew && res.data && res.data.id) DS.state.id = res.data.id;
+      DS.state.item = res.data;
+      DS.refreshLists().then(BB.loadRegistry);
+    }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
+  };
+
+  DS._saveCredential = function() {
+    var name    = document.getElementById('ds-f-name').value.trim();
+    var type    = document.getElementById('ds-f-type').value;
+    var dataTxt = document.getElementById('ds-f-data').value.trim() || '{}';
+    var tagsTxt = document.getElementById('ds-f-tags').value.trim();
+    if (!name) { setPaneStatus('Name is required.', 'err'); return; }
+    if (!type) { setPaneStatus('Type is required.', 'err'); return; }
+    var data;
+    try { data = JSON.parse(dataTxt); }
+    catch (e) { setPaneStatus('Connection data must be valid JSON.', 'err'); return; }
+    var tags = tagsTxt ? tagsTxt.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+    var body = { name: name, type: type, data: data, tags: tags };
+    var btn  = document.getElementById('ds-save-btn'); btn.disabled = true;
+    setPaneStatus('Saving\u2026', 'info');
+    var isNew = DS.state.id == null;
+    var req = isNew
+      ? dsFetch('/api/credentials',                  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : dsFetch('/api/credentials/' + DS.state.id,   { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    req.then(function(res) {
+      btn.disabled = false;
+      if (!res.ok) { setPaneStatus(dsErrorText(res, 'Save failed'), 'err'); return; }
+      setPaneStatus('\u2713 Saved', 'ok');
+      if (isNew && res.data && res.data.id) DS.state.id = res.data.id;
+      DS.state.item = res.data || body;
+      DS.refreshLists().then(BB.loadRegistry);
+    }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
+  };
+
+  // ── Delete current (with confirm) ────────────────────────────────────────
+  DS.deleteCurrent = function() {
+    if (!DS.state.id) return;
+    var label = (DS.state.kind === 'datasource') ? 'datasource'
+              : (DS.state.kind === 'query')      ? 'query'
+              :                                    'credential';
+    if (!confirm('Delete this ' + label + '? This cannot be undone.')) return;
+    var path = (DS.state.kind === 'datasource') ? '/api/datasources/' + DS.state.id
+             : (DS.state.kind === 'query')      ? '/api/queries/'     + DS.state.id
+             :                                    '/api/credentials/' + DS.state.id;
+    setPaneStatus('Deleting\u2026', 'info');
+    dsFetch(path, { method: 'DELETE' }).then(function(res) {
+      if (!res.ok) { setPaneStatus(dsErrorText(res, 'Delete failed'), 'err'); return; }
+      DS.state.kind = null; DS.state.id = null; DS.state.item = null;
+      DS.refreshLists().then(function() { DS.renderForm(); BB.loadRegistry(); });
+    }).catch(function(e) { setPaneStatus('Network error: ' + e.message, 'err'); });
+  };
+
+  // ── Test Run (datasources + queries only) ────────────────────────────────
+  DS.testRun = function() {
+    if (DS.state.kind === 'datasource') return DS._testDatasource();
+    if (DS.state.kind === 'query')      return DS._testQuery();
+  };
+
+  function renderPreviewInto(elId, columns, rows) {
+    var pv = document.getElementById(elId);
+    if (!pv) return;
     if (!rows || !rows.length) {
       pv.innerHTML = '<div class="ds-preview-empty">Query returned 0 rows.</div>';
       return;
     }
-    var colNames = columns.map(function(c) { return typeof c === 'object' ? (c.name || '') : c; });
+    var colNames = (columns || []).map(function(c) { return typeof c === 'object' ? (c.name || '') : c; });
     var html = '<table><thead><tr>';
     colNames.forEach(function(n) { html += '<th>' + esc(n) + '</th>'; });
     html += '</tr></thead><tbody>';
@@ -2750,117 +3242,73 @@ function esc(str) {
     pv.innerHTML = html;
   }
 
-  window.testDsRun = function() {
-    var name = document.getElementById('ds-name').value.trim();
-    var sql  = document.getElementById('ds-sql').value.trim();
-    var cred = document.getElementById('ds-credential').value;
-    var src  = document.getElementById('ds-source').value;
-    if (!sql) { setDsStatus('SQL is required.', 'err'); return; }
-    setDsStatus('Running\u2026', 'info');
+  DS._testDatasource = function() {
+    var sql  = document.getElementById('ds-f-sql').value.trim();
+    var cred = document.getElementById('ds-f-credential').value;
+    var name = document.getElementById('ds-f-name').value.trim();
+    if (!sql) { setPaneStatus('SQL is required.', 'err'); return; }
+    setPaneStatus('Running\u2026', 'info');
     var btn = document.getElementById('ds-test-btn'); btn.disabled = true;
 
-    if (_dsState.mode === 'query' && BB.activeVersion() === '1.18') {
-      // Use POST /api/queries/execute (ad-hoc, no save needed)
-      var body = {
-        query: { raw_sql: sql, datasources: src ? [{ id: src, alias: 'main' }] : [] },
-        response_control: { include_count: false, include_params_details: false, include_columns: true }
-      };
-      fetch('/api/proxy/api/queries/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
-      .then(function(res) {
-        btn.disabled = false;
-        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Query failed', 'err'); return; }
-        renderDsPreview(res.data.columns || [], res.data.data || []);
-        setDsStatus('\u2713 ' + (res.data.data || []).length + ' row(s)', 'ok');
-      })
-      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
-    } else {
-      // Datasource ad-hoc: there's no portal endpoint to run un-saved SQL on a credential,
-      // so we save a temp datasource, fetch its data, then delete it.
-      if (!cred) { setDsStatus('Credential is required to test.', 'err'); btn.disabled = false; return; }
-      var tempName = (name || 'untitled') + ' [test ' + Date.now().toString(36) + ']';
-      var dsBody = {
-        name: tempName, sql: sql, json_data: {},
-        database_connection: { type: 'stored', id: cred }
-      };
-      fetch('/api/proxy/api/datasources', {
+    // If editing an existing DS, just pull /data on it directly.
+    if (DS.state.id) {
+      dsFetch('/api/datasources/' + DS.state.id + '/data', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dsBody)
-      })
-      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+        body: JSON.stringify({ filters: {}, queries: [{ columns: ['*'], limit: 5 }] })
+      }).then(function(res) {
+        btn.disabled = false;
+        if (!res.ok) { setPaneStatus(dsErrorText(res, 'Test failed'), 'err'); return; }
+        var result = res.data && res.data.results && res.data.results[0];
+        if (!result) { setPaneStatus('No result returned.', 'err'); return; }
+        renderPreviewInto('ds-f-preview', result.columns || [], result.data || []);
+        setPaneStatus('\u2713 ' + (result.data || []).length + ' row(s)', 'ok');
+      }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
+      return;
+    }
+
+    // New DS: temp-create + fetch + delete
+    if (!cred) { setPaneStatus('Credential is required to test.', 'err'); btn.disabled = false; return; }
+    var tempName = (name || 'untitled') + ' [test ' + Date.now().toString(36) + ']';
+    var dsBody = { name: tempName, sql: sql, json_data: {}, database_connection: { type: 'stored', id: cred } };
+    dsFetch('/api/datasources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dsBody) })
       .then(function(c) {
-        if (!c.ok) throw new Error((c.data && (c.data.detail || c.data.error)) || 'Create failed');
+        if (!c.ok) throw new Error(dsErrorText(c, 'Create failed'));
         var dsId = c.data.id;
-        return fetch('/api/proxy/api/datasources/' + dsId + '/data', {
+        return dsFetch('/api/datasources/' + dsId + '/data', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filters: {}, queries: [{ columns: ['*'], limit: 5 }] })
-        }).then(function(r2) { return r2.json().then(function(d2) { return { ok: r2.ok, data: d2, tempId: dsId }; }); });
+        }).then(function(d) { return { res: d, tempId: dsId }; });
       })
-      .then(function(d) {
-        // Always delete the temp datasource
-        if (d.tempId) {
-          fetch('/api/proxy/api/datasources/' + d.tempId, { method: 'DELETE' }).catch(function(){});
-        }
+      .then(function(out) {
+        if (out.tempId) dsFetch('/api/datasources/' + out.tempId, { method: 'DELETE' }).catch(function(){});
         btn.disabled = false;
-        if (!d.ok) { setDsStatus((d.data && (d.data.detail || d.data.error)) || 'Test query failed', 'err'); return; }
-        var result = d.data.results && d.data.results[0];
-        if (!result) { setDsStatus('No result returned.', 'err'); return; }
-        renderDsPreview(result.columns || [], result.data || []);
-        setDsStatus('\u2713 ' + (result.data || []).length + ' row(s)', 'ok');
+        if (!out.res.ok) { setPaneStatus(dsErrorText(out.res, 'Test query failed'), 'err'); return; }
+        var result = out.res.data && out.res.data.results && out.res.data.results[0];
+        if (!result) { setPaneStatus('No result returned.', 'err'); return; }
+        renderPreviewInto('ds-f-preview', result.columns || [], result.data || []);
+        setPaneStatus('\u2713 ' + (result.data || []).length + ' row(s)', 'ok');
       })
-      .catch(function(e) { btn.disabled = false; setDsStatus(e.message, 'err'); });
-    }
+      .catch(function(e) { btn.disabled = false; setPaneStatus(e.message, 'err'); });
   };
 
-  window.saveDs = function() {
-    var name = document.getElementById('ds-name').value.trim();
-    var sql  = document.getElementById('ds-sql').value.trim();
-    var cred = document.getElementById('ds-credential').value;
-    var src  = document.getElementById('ds-source').value;
-    if (!name) { setDsStatus('Name is required.', 'err'); return; }
-    if (!sql)  { setDsStatus('SQL is required.', 'err'); return; }
-    var btn = document.getElementById('ds-save-btn'); btn.disabled = true;
-    setDsStatus('Saving\u2026', 'info');
-
-    if (_dsState.mode === 'query' && BB.activeVersion() === '1.18') {
-      var body = {
-        raw_sql: sql,
-        datasources: src ? [{ id: src, alias: 'main' }] : []
-      };
-      fetch('/api/proxy/api/queries', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
-      .then(function(res) {
-        btn.disabled = false;
-        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Create failed', 'err'); return; }
-        setDsStatus('\u2713 Query created (' + res.data.id.slice(0, 8) + ')', 'ok');
-        BB.loadRegistry();
-        setTimeout(window.closeDsModal, 900);
-      })
-      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
-    } else {
-      if (!cred) { setDsStatus('Credential is required.', 'err'); btn.disabled = false; return; }
-      var dsBody = { name: name, sql: sql, json_data: {}, database_connection: { type: 'stored', id: cred } };
-      fetch('/api/proxy/api/datasources', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dsBody)
-      })
-      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
-      .then(function(res) {
-        btn.disabled = false;
-        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Create failed', 'err'); return; }
-        setDsStatus('\u2713 Datasource created (' + res.data.id.slice(0, 8) + ')', 'ok');
-        BB.loadRegistry();
-        setTimeout(window.closeDsModal, 900);
-      })
-      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
-    }
+  DS._testQuery = function() {
+    var rawSql  = document.getElementById('ds-f-sql').value.trim();
+    var sources = DS._readSourceRows();
+    if (!rawSql) { setPaneStatus('SQL is required.', 'err'); return; }
+    setPaneStatus('Running\u2026', 'info');
+    var btn = document.getElementById('ds-test-btn'); btn.disabled = true;
+    var body = {
+      query: { raw_sql: rawSql, datasources: sources },
+      response_control: { include_count: false, include_params_details: false, include_columns: true }
+    };
+    dsFetch('/api/queries/execute', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    }).then(function(res) {
+      btn.disabled = false;
+      if (!res.ok) { setPaneStatus(dsErrorText(res, 'Query failed'), 'err'); return; }
+      renderPreviewInto('ds-f-preview', res.data.columns || [], res.data.data || []);
+      setPaneStatus('\u2713 ' + (res.data.data || []).length + ' row(s)', 'ok');
+    }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
   };
 
   // ── Hook into existing UI lifecycle ────────────────────────────────────────
