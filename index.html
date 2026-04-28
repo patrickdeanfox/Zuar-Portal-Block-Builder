@@ -1730,6 +1730,7 @@ function renderIntakeCard() {
     dsName: '',
     queryCount: 1,
     interactions: { sendsFilters: false, clickActions: false, drilldown: false },
+    sample: { mode: 'off', fields: '', rowCount: 8 },   // 'off' | 'ai' | 'fields'
     notes: ''
   };
 
@@ -1790,6 +1791,21 @@ function renderIntakeCard() {
       '</div>' +
 
       '<div class="intake-row">' +
+        '<label>Start with sample data?</label>' +
+        '<div class="intake-help">Useful when you don\'t have a datasource yet \u2014 the AI will scaffold the block with mock data so you can see it render. Real data wiring happens later.</div>' +
+        '<div class="intake-chips" id="intake-sample-chips">' +
+          '<button class="intake-chip active" data-sample="off"    onclick="intakeSetSample(\'off\')">No, use real data only</button>' +
+          '<button class="intake-chip"        data-sample="ai"     onclick="intakeSetSample(\'ai\')">Yes \u2014 AI invents plausible rows</button>' +
+          '<button class="intake-chip"        data-sample="fields" onclick="intakeSetSample(\'fields\')">Yes \u2014 I\'ll give field names</button>' +
+        '</div>' +
+        '<div id="intake-sample-detail" style="display:none;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+          '<input type="text" id="intake-sample-fields" placeholder="e.g. state, region, total_orders, revenue" style="flex:1;min-width:240px" oninput="window._intake.sample.fields = this.value"/>' +
+          '<input type="number" id="intake-sample-rows" min="3" max="50" value="8" title="Sample row count" style="flex:0 0 80px" oninput="window._intake.sample.rowCount = parseInt(this.value)||8"/>' +
+          '<span style="font-size:11px;color:var(--text-dim)">rows</span>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
         '<label>Anything else? (optional)</label>' +
         '<textarea id="intake-notes" placeholder="Style preferences, specific behaviors, edge cases, columns to highlight..." oninput="window._intake.notes = this.value"></textarea>' +
       '</div>' +
@@ -1814,6 +1830,23 @@ function intakeSetChart(t) {
   window._intake.chartType = t;
   var chips = document.querySelectorAll('#intake-chart-chips .intake-chip');
   chips.forEach(function(c) { c.classList.toggle('active', c.getAttribute('data-chart') === t); });
+}
+
+function intakeSetSample(mode) {
+  if (!window._intake) return;
+  window._intake.sample.mode = mode;
+  var chips = document.querySelectorAll('#intake-sample-chips .intake-chip');
+  chips.forEach(function(c) { c.classList.toggle('active', c.getAttribute('data-sample') === mode); });
+  var detail = document.getElementById('intake-sample-detail');
+  if (!detail) return;
+  // 'fields' shows the fields input + row count; 'ai' shows just row count; 'off' hides both
+  if (mode === 'off') {
+    detail.style.display = 'none';
+  } else {
+    detail.style.display = 'flex';
+    var fieldsInput = document.getElementById('intake-sample-fields');
+    if (fieldsInput) fieldsInput.style.display = (mode === 'fields') ? '' : 'none';
+  }
 }
 
 function intakeSetDs(value) {
@@ -1846,6 +1879,19 @@ function submitIntake() {
   var card = ge('chat-messages').querySelector('#intake-card');
   if (card) card.remove();
 
+  // Sample-data summary line
+  var sampleSummary;
+  if (i.sample.mode === 'ai') {
+    sampleSummary = 'AI-generated mock rows (' + (i.sample.rowCount || 8) + ' rows)';
+  } else if (i.sample.mode === 'fields') {
+    var fields = (i.sample.fields || '').trim();
+    sampleSummary = 'AI-generated mock rows for fields: ' +
+      (fields || '(no fields specified, AI will infer)') +
+      ' (' + (i.sample.rowCount || 8) + ' rows)';
+  } else {
+    sampleSummary = 'no sample data — wire to real source';
+  }
+
   var summaryLines = [
     '**Block type:** ' + i.blockType,
     '**Chart type:** ' + (i.chartType || 'none / not a chart'),
@@ -1857,7 +1903,8 @@ function submitIntake() {
         i.interactions.clickActions && 'click actions (URL/write-back)',
         i.interactions.drilldown    && 'reactive drill-down'
       ].filter(Boolean).join('; ') || 'none specified'
-    )
+    ),
+    '**Sample data:** ' + sampleSummary
   ];
   if (i.notes && i.notes.trim()) summaryLines.push('**Notes:** ' + i.notes.trim());
   appendChatMsg('user', summaryLines.join('\n'));
@@ -1874,18 +1921,32 @@ function submitIntake() {
     'interaction_filters: '   + !!i.interactions.sendsFilters,
     'interaction_clicks: '    + !!i.interactions.clickActions,
     'interaction_drilldown: ' + !!i.interactions.drilldown,
+    'sample_data_mode: '      + i.sample.mode,
+    'sample_data_fields: '    + (i.sample.fields || ''),
+    'sample_data_row_count: ' + (i.sample.rowCount || 8),
     'notes: ' + (i.notes || ''),
     '--- END INTAKE ---'
   ].join('\n');
 
   // Seed an initial guidance message tailored to whether they have a DS yet.
   var guidance;
+  var sampleNote = '';
+  if (i.sample.mode === 'ai') {
+    sampleNote = '\n\n**Sample data:** I\'ll scaffold the block with ' + (i.sample.rowCount || 8) + ' rows of plausible mock data based on the chart/topic so you can see it render before wiring real data. Mock rows live in a `SAMPLE_DATA` const at the top of the script with a `USE_SAMPLE` toggle \u2014 flip it to false once real data is wired.';
+  } else if (i.sample.mode === 'fields') {
+    var fields = (i.sample.fields || '').trim();
+    sampleNote = '\n\n**Sample data:** I\'ll generate ' + (i.sample.rowCount || 8) + ' rows of mock data' +
+      (fields ? ' for the fields you listed (`' + fields + '`)' : ' for a sensible set of fields') +
+      ', stored in a `SAMPLE_DATA` const at the top of the script. A `USE_SAMPLE = true` flag lets you switch to real data without rewriting render logic.';
+  }
+
   if (!i.dsId) {
     guidance = 'Got it. Since you don\'t have a data source picked yet, let\'s start there.\n\n' +
       '1. **Credential first** \u2014 do you already have a database credential in the portal? If not, click **+ New credential** above. I can help you write the JDBC string if you tell me the DB type (postgres / mysql / mssql / snowflake / etc.) and host.\n' +
       '2. **Datasource (or Query in 1.18)** \u2014 once a credential exists, I\'ll draft the SQL based on what you describe. We\'ll use Test Run to confirm columns before writing block code.\n' +
-      '3. **Block code** \u2014 I\'ll generate the HTML+JS+CSS using the columns we confirmed.\n\n' +
-      'What database type are you on, and what data do you want to chart?';
+      '3. **Block code** \u2014 I\'ll generate the HTML+JS+CSS using the columns we confirmed.' +
+      sampleNote +
+      '\n\nWhat database type are you on, and what data do you want to chart?';
   } else {
     guidance = 'Got it. I have the intake. Next I\'ll:\n' +
       '1. Inspect `' + i.dsName + '` (' + (i.dsKind || 'datasource') + ') and confirm the columns/data types.\n' +
@@ -1894,7 +1955,8 @@ function submitIntake() {
       (i.interactions.sendsFilters ? '\u2022 Add a click handler that calls `zPortal.dataSource.setFilters` (1.17) or `zPortal.query.setFilter` (1.18).\n' : '') +
       (i.interactions.clickActions ? '\u2022 Wire click \u2192 action (open URL / db_modification / etc).\n' : '') +
       (i.interactions.drilldown    ? '\u2022 Register a reactive listener so the block re-renders when other filters change.\n' : '') +
-      '\nDo you want me to start with the SQL/columns, or jump straight to drafting the code?';
+      sampleNote +
+      '\n\nDo you want me to start with the SQL/columns, or jump straight to drafting the code?';
   }
 
   appendChatMsg('ai', guidance);
@@ -2170,6 +2232,19 @@ function buildSystemPrompt() {
     'If the user is unsure about credential fields, ask their DB type (postgresql, mysql, mssql,',
     'snowflake, redshift, etc.), then propose a JDBC URL or host/port/db split that fits.',
     'Common defaults: postgresql 5432, mysql 3306, mssql 1433, redshift 5439, snowflake uses account+warehouse.',
+    '',
+    '# SAMPLE DATA MODE',
+    'If the intake has sample_data_mode=ai or sample_data_mode=fields, scaffold the block with',
+    'mock data using this exact convention:',
+    '  - Place a `const USE_SAMPLE = true;` flag at the top of the script.',
+    '  - Place a `const SAMPLE_DATA = { columns: [...], rows: [[...], [...]] };` const right after it.',
+    '  - Read columns/rows like:',
+    '      const cols = USE_SAMPLE ? SAMPLE_DATA.columns : (currentBlock?.queryResults?.[0]?.columns || []).map(c => c.name);',
+    '      const rows = USE_SAMPLE ? SAMPLE_DATA.rows    : (currentBlock?.queryResults?.[0]?.data    || []);',
+    '  - For 1.17 use `currentBlock?.data?.columns` and `currentBlock?.data?.data` instead.',
+    '  - Generate sample_data_row_count rows of plausible data that matches chart_type.',
+    '  - If sample_data_fields is non-empty, use those exact column names.',
+    '  - The block should render and look correct from the first save \u2014 user just flips USE_SAMPLE to false later.',
     '',
     '# AVAILABLE PORTAL OBJECTS (from BB.registry, summarised)'
   ].join('\n');
