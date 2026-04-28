@@ -251,9 +251,20 @@ a:hover{border-bottom-color:var(--primary)}
 #chat-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);resize:none;min-height:42px;max-height:140px;line-height:1.5;transition:border-color .15s;overflow-y:auto}
 #chat-input:focus{outline:none;border-color:var(--primary)}
 #chat-input::placeholder{color:var(--text-dim)}
-#btn-send{background:var(--primary);border:none;color:var(--bg);width:38px;height:38px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+#btn-send{background:var(--primary);border:none;color:#fbf5e6;width:40px;height:40px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;box-shadow:0 1px 2px rgba(14,107,72,.25)}
 #btn-send:hover{background:var(--primary-dim)}
-#btn-send:disabled{background:var(--surface3);cursor:not-allowed;color:var(--text-dim)}
+#btn-send:disabled{background:var(--surface3);cursor:not-allowed;color:var(--text-dim);box-shadow:none}
+#btn-attach{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:40px;height:40px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+#btn-attach:hover{color:var(--primary);border-color:var(--primary-dim);background:var(--primary-bg)}
+#chat-attachments{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:4px}
+.chat-att{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;color:var(--text);max-width:240px}
+.chat-att .att-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:4px;font-size:11px;color:var(--text-dim);flex-shrink:0}
+.chat-att .att-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.chat-att .att-meta{font-size:10px;color:var(--text-dim);font-family:var(--font-mono)}
+.chat-att .att-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:1px 4px;border-radius:3px;line-height:1}
+.chat-att .att-remove:hover{color:var(--ruby);background:var(--ruby-bg)}
+.chat-att.image .att-icon{background:var(--amethyst-bg);color:var(--amethyst)}
+.chat-att.text  .att-icon{background:var(--sapphire-bg);color:var(--sapphire)}
 .sc-hint{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:10.5px;color:var(--text-dim);font-family:var(--font-ui);user-select:none;line-height:1.6}
 .sc-hint .sc-hint-key{display:inline-flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border2);color:var(--primary);padding:1px 6px;border-radius:99px;font-weight:700;font-family:var(--font-mono);font-size:10px}
 .sc-hint .sc-hint-cat{display:inline-block;background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);padding:1px 7px;border-radius:99px;font-size:10px}
@@ -261,6 +272,21 @@ a:hover{border-bottom-color:var(--primary)}
 .sc-hint .sc-hint-cat.cols{color:var(--green)}
 
 /* ── Data preview panel ── */
+/* amCharts loader banner */
+#amcharts-banner{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--topaz-bg);flex-shrink:0;animation:fadeUp .25s ease}
+#amcharts-banner.ok{background:var(--jade-bg);border-bottom-color:var(--jade-border)}
+#amcharts-banner.miss{background:var(--topaz-bg);border-bottom-color:var(--topaz-border)}
+.amc-banner-icon{font-size:18px;color:var(--topaz);flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(180,83,9,.1);border-radius:50%}
+#amcharts-banner.ok .amc-banner-icon{color:var(--jade);background:rgba(4,120,87,.1)}
+.amc-banner-text{flex:1;min-width:0}
+.amc-banner-title{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text-bright);letter-spacing:-.005em;font-variation-settings:'opsz' 60}
+.amc-banner-sub{font-size:12px;color:var(--text-dim);margin-top:2px;line-height:1.5}
+.amc-banner-actions{display:flex;gap:8px;flex-shrink:0}
+.amc-banner-btn{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--topaz-border);background:var(--surface);color:var(--topaz);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-ui);transition:all .15s;white-space:nowrap}
+.amc-banner-btn:hover{background:var(--topaz);color:var(--surface);border-color:var(--topaz)}
+.amc-banner-btn.dismiss{border-color:var(--border);color:var(--text-dim);background:transparent}
+.amc-banner-btn.dismiss:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+
 #data-preview{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:block}
 #data-preview-header{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}
 #data-preview-header:hover{background:var(--surface2)}
@@ -628,6 +654,16 @@ a:hover{border-bottom-color:var(--primary)}
         <button class="action-btn ai-btn" id="btn-ai-toggle" onclick="toggleAI()">&#10022; AI</button>
       </div>
 
+      <!-- amCharts loader status banner (slides in when relevant) -->
+      <div id="amcharts-banner" style="display:none">
+        <div class="amc-banner-icon">&#9889;</div>
+        <div class="amc-banner-text">
+          <div class="amc-banner-title" id="amc-banner-title">amCharts loader status</div>
+          <div class="amc-banner-sub" id="amc-banner-sub"></div>
+        </div>
+        <div class="amc-banner-actions" id="amc-banner-actions"></div>
+      </div>
+
       <!-- Block Data panel (data sources + queries + sample preview) -->
       <div id="data-preview">
         <div id="data-preview-header" onclick="toggleDataPreview()">
@@ -694,8 +730,12 @@ a:hover{border-bottom-color:var(--primary)}
           </div>
           <div id="chat-messages"></div>
           <div id="chat-input-wrap">
+            <!-- Queued attachments (shown when files are pending send) -->
+            <div id="chat-attachments" style="display:none"></div>
             <div id="chat-input-area">
-              <textarea id="chat-input" placeholder="Describe the block, or ask to modify the current code... type :  to insert names" rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+              <button id="btn-attach" onclick="document.getElementById('chat-file-input').click()" title="Attach files (logs, screenshots, CSVs)">&#128206;</button>
+              <input id="chat-file-input" type="file" multiple accept=".txt,.log,.json,.csv,.tsv,.xml,.md,.yml,.yaml,.html,.css,.js,.ts,image/*" style="display:none" onchange="handleChatFiles(this.files); this.value=''"/>
+              <textarea id="chat-input" placeholder="Describe the block, or ask to modify... :  inserts names \u2022 paperclip attaches files" rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
               <button id="btn-send" onclick="sendChat()" title="Send">&#8679;</button>
             </div>
             <div class="sc-hint" title="Type a colon (:) anywhere in the input to autocomplete from your portal">
@@ -2065,6 +2105,9 @@ function submitIntake() {
   // Stash intake for buildSystemPrompt to surface to the model on every send
   window._intakeContext = contextBlob;
 
+  // Re-render the amCharts banner now that we know chart_type
+  if (window.BB && BB.amcharts) BB.amcharts.renderBanner();
+
   setTimeout(function() { ge('chat-input').focus(); }, 30);
 }
 
@@ -2222,15 +2265,112 @@ function clearChat() { chatHistory = []; window._intakeContext = null; ge('chat-
 function chatKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }
 function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
 
+// ── Chat attachments (logs, screenshots, CSVs) ─────────────────────────────
+window._chatAttachments = [];     // { name, mime, kind: 'text'|'image', text?, dataUrl? }
+
+var TEXT_MIME_RX = /^(text\/|application\/(json|xml|x-yaml|x-www-form|csv))/i;
+var TEXT_EXT_RX  = /\.(txt|log|json|csv|tsv|xml|md|yml|yaml|html|css|js|jsx|ts|tsx|py|rb|sh)$/i;
+var IMAGE_MIME_RX= /^image\//i;
+
+function fileKind(file) {
+  if (IMAGE_MIME_RX.test(file.type || '')) return 'image';
+  if (TEXT_MIME_RX.test(file.type || '') || TEXT_EXT_RX.test(file.name || '')) return 'text';
+  return 'text'; // try as text by default
+}
+
+function readFileAsText(file) {
+  return new Promise(function(resolve, reject) {
+    var r = new FileReader();
+    r.onload  = function() { resolve(r.result); };
+    r.onerror = function() { reject(r.error); };
+    r.readAsText(file);
+  });
+}
+function readFileAsDataUrl(file) {
+  return new Promise(function(resolve, reject) {
+    var r = new FileReader();
+    r.onload  = function() { resolve(r.result); };
+    r.onerror = function() { reject(r.error); };
+    r.readAsDataURL(file);
+  });
+}
+
+function handleChatFiles(files) {
+  if (!files || !files.length) return;
+  var pending = [];
+  Array.from(files).forEach(function(f) {
+    var kind = fileKind(f);
+    if (kind === 'image') {
+      pending.push(readFileAsDataUrl(f).then(function(dataUrl) {
+        return { name: f.name, mime: f.type || 'image/png', kind: 'image', dataUrl: dataUrl, size: f.size };
+      }));
+    } else {
+      pending.push(readFileAsText(f).then(function(text) {
+        return { name: f.name, mime: f.type || 'text/plain', kind: 'text', text: text, size: f.size };
+      }));
+    }
+  });
+  Promise.all(pending).then(function(items) {
+    items.forEach(function(it) { window._chatAttachments.push(it); });
+    renderChatAttachments();
+  });
+}
+
+function renderChatAttachments() {
+  var host = ge('chat-attachments');
+  if (!host) return;
+  var atts = window._chatAttachments || [];
+  if (!atts.length) { host.style.display = 'none'; host.innerHTML = ''; return; }
+  host.style.display = 'flex';
+  host.innerHTML = atts.map(function(a, i) {
+    var icon  = a.kind === 'image' ? '\u25A3' : '\u25A4';
+    var sizeKb = a.size ? Math.max(1, Math.round(a.size / 1024)) + 'kb' : '';
+    return '<div class="chat-att ' + a.kind + '">' +
+             '<span class="att-icon">' + icon + '</span>' +
+             '<span class="att-name" title="' + esc(a.name) + '">' + esc(a.name) + '</span>' +
+             (sizeKb ? '<span class="att-meta">' + sizeKb + '</span>' : '') +
+             '<button class="att-remove" onclick="removeChatAttachment(' + i + ')" title="Remove">\u00D7</button>' +
+           '</div>';
+  }).join('');
+}
+
+function removeChatAttachment(idx) {
+  if (!window._chatAttachments) return;
+  window._chatAttachments.splice(idx, 1);
+  renderChatAttachments();
+}
+
+// Drag-and-drop on the chat panel
+window.addEventListener('DOMContentLoaded', function() {
+  var aiView = document.getElementById('ai-view');
+  if (!aiView) return;
+  ['dragenter', 'dragover'].forEach(function(ev) {
+    aiView.addEventListener(ev, function(e) { e.preventDefault(); e.stopPropagation(); });
+  });
+  aiView.addEventListener('drop', function(e) {
+    if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+    e.preventDefault(); e.stopPropagation();
+    handleChatFiles(e.dataTransfer.files);
+  });
+});
+
 function sendChat() {
   var input  = ge('chat-input');
   var prompt = input.value.trim();
-  if (!prompt) return;
+  var atts   = (window._chatAttachments || []).slice();
+  if (!prompt && !atts.length) return;
   var btn = ge('btn-send');
   input.value = '';
   input.style.height = 'auto';
   btn.disabled = true;
-  appendChatMsg('user', prompt);
+
+  // Show the user's bubble: prompt text plus an inline attachment list
+  var userBubble = prompt;
+  if (atts.length) {
+    var summary = atts.map(function(a) { return '\u2022 **' + a.name + '** (' + a.kind + ', ' + Math.max(1, Math.round((a.size||0)/1024)) + 'kb)'; }).join('\n');
+    userBubble = (prompt ? prompt + '\n\n' : '') + '_Attached:_\n' + summary;
+  }
+  appendChatMsg('user', userBubble);
 
   var currentHTML = monacoHTML ? monacoHTML.getValue() : '';
   var currentCSS  = monacoCSS  ? monacoCSS.getValue()  : '';
@@ -2251,14 +2391,51 @@ function sendChat() {
   }
 
   var intakeSection = window._intakeContext ? ('\n\n' + window._intakeContext) : '';
-  var userMsgWithCtx = prompt +
+
+  // Build text portion (including any TEXT attachments inlined as fenced blocks)
+  var textPortion = (prompt || '(no message — see attachments)') +
     '\n\n--- CURRENT BLOCK CODE ---' +
     '\nBlock name: ' + blockName +
     '\n\n[HTML + JS]\n' + (currentHTML || '(empty)') +
     '\n\n[CSS]\n' + (currentCSS || '(empty)') +
     '\n--- END CURRENT CODE ---' + dataSection + intakeSection;
 
-  chatHistory.push({ role: 'user', content: prompt });
+  var textAtts  = atts.filter(function(a) { return a.kind === 'text'; });
+  var imageAtts = atts.filter(function(a) { return a.kind === 'image'; });
+  if (textAtts.length) {
+    textPortion += '\n\n--- ATTACHED FILES (' + textAtts.length + ') ---';
+    textAtts.forEach(function(a) {
+      // Try to detect a code-fence language from the extension
+      var ext = (a.name.match(/\.([^.]+)$/) || [])[1] || '';
+      var lang = (ext || '').toLowerCase();
+      // Truncate huge files so we don't blow the context
+      var body = a.text || '';
+      var trimmed = false;
+      if (body.length > 60000) { body = body.slice(0, 60000); trimmed = true; }
+      textPortion += '\n\n### ' + a.name + ' (' + (a.mime || ext) + ', ' + (a.size || body.length) + ' bytes' + (trimmed ? ', TRUNCATED to first 60kB' : '') + ')\n' +
+                     '```' + lang + '\n' + body + '\n```';
+    });
+    textPortion += '\n--- END ATTACHED FILES ---';
+  }
+
+  // Build Anthropic content array — text first, then any images
+  var contentBlocks = [{ type: 'text', text: textPortion }];
+  imageAtts.forEach(function(a) {
+    var m = (a.dataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
+    if (!m) return;
+    contentBlocks.push({
+      type: 'image',
+      source: { type: 'base64', media_type: m[1], data: m[2] }
+    });
+  });
+
+  // Plain string for chat history (used in subsequent turns; no image data)
+  chatHistory.push({ role: 'user', content: textPortion });
+
+  // Clear queued attachments
+  window._chatAttachments = [];
+  renderChatAttachments();
+
   var thinkId = appendThinking();
 
   fetch('/api/anthropic', {
@@ -2267,7 +2444,7 @@ function sendChat() {
     body: JSON.stringify({
       max_tokens: 4096,
       system: buildSystemPrompt(),
-      messages: [{ role: 'user', content: userMsgWithCtx }]
+      messages: [{ role: 'user', content: contentBlocks }]
     })
   })
   .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
@@ -2344,6 +2521,69 @@ function buildSystemPrompt() {
     '  - Generate sample_data_row_count rows of plausible data that matches chart_type.',
     '  - If sample_data_fields is non-empty, use those exact column names.',
     '  - The block should render and look correct from the first save \u2014 user just flips USE_SAMPLE to false later.',
+    '',
+    '# AMCHARTS LOADER PATTERN (mandatory for every chart block)',
+    'Every page that has any amCharts block MUST also have a single global loader',
+    'block named AMCHARTS_LOADER (or similar) that exposes window.AMCHARTS_LOADER.load().',
+    'It loads amCharts v5 scripts once per page, applies the license key, and returns',
+    'a singleton promise. Chart blocks then wrap all am5.* code in:',
+    '  window.AMCHARTS_LOADER.load().then(function() { /* am5 code here */ });',
+    'NEVER load amCharts scripts directly inside a chart block.',
+    '',
+    'Per-chart-type modules (must appear in the loader block\u2019s scripts array):',
+    '  xy / line / column / bar / scatter \u2192 [index.js, themes/Animated.js, xy.js]',
+    '  pie / donut                       \u2192 [index.js, themes/Animated.js, percent.js]',
+    '  treemap                            \u2192 [index.js, themes/Animated.js, hierarchy.js]',
+    '  sankey                             \u2192 [index.js, themes/Animated.js, flow.js]',
+    '  map                                \u2192 [index.js, themes/Animated.js, map.js, geodata.js]',
+    '  radar / gauge                      \u2192 [index.js, themes/Animated.js, radar.js]',
+    '',
+    'When the user is making a chart block whose modules aren\u2019t in their loader yet,',
+    'emit a fenced ```dsmodal``` block of the form',
+    '  {"kind":"loader_extend","prefill":{"add":["hierarchy.js","flow.js"]}}',
+    'so the UI can offer an Add-to-loader button. Always also briefly explain why',
+    'the new module is needed.',
+    '',
+    '# BLOCK SCAFFOLD CONVENTION (apply to EVERY HTML block you generate)',
+    'Every block must have a clear top-level CONFIG object and a bottom-level init()',
+    'function. This makes blocks readable, debuggable, and consistent. Template:',
+    '',
+    '  <script>',
+    '  // ===== CONFIG =================================================',
+    '  const CONFIG = {',
+    '    verboseLogging: false,   // flip to true to dump everything to console',
+    '    blockId:        currentBlock?.id || "(unsaved)",',
+    '    chartId:        "chartdiv-1",',
+    '    sampleData:     null,    // populated when intake.sample.mode is on',
+    '    /* any other knobs the block needs */',
+    '  };',
+    '',
+    '  function log(...args) {',
+    '    if (CONFIG.verboseLogging) console.log("[" + (currentBlock?.name || "block") + "]", ...args);',
+    '  }',
+    '  function warn(...args) { console.warn("[block]", ...args); }',
+    '',
+    '  // ===== HELPERS / RENDER FUNCTIONS =============================',
+    '  function readData() { /* extract cols/rows from currentBlock */ }',
+    '  function render()   { /* build DOM + chart */ }',
+    '',
+    '  // ===== INIT (always last) =====================================',
+    '  function init() {',
+    '    log("init start");',
+    '    /* call other functions in order */',
+    '    render();',
+    '    log("init done");',
+    '  }',
+    '  init();',
+    '  <\/script>',
+    '',
+    'Rules:',
+    '  - CONFIG.verboseLogging must be present in EVERY block (default false).',
+    '  - All console.log calls in your code must go through log(), not directly to console.',
+    '  - console.warn / console.error are fine for actual problems and ALWAYS run.',
+    '  - The init() function is always the last thing called. No top-level work outside CONFIG/log/init.',
+    '  - For chart blocks, init() looks like:',
+    '      function init() { window.AMCHARTS_LOADER.load().then(render); }',
     '',
     '# AVAILABLE PORTAL OBJECTS (from BB.registry, summarised)'
   ].join('\n');
@@ -2769,7 +3009,10 @@ var DEFAULT_RULES = [
   { text: 'Always dispose of the amCharts root before re-rendering: if (root) root.dispose(); at the top of the render function.', enabled: true },
   { text: 'Add a const DEBUG = true flag at the top of every block. Wrap all console.log calls in if (DEBUG) {...}.', enabled: true },
   { text: 'Always use CSS variables (--color-primary, --color-text, --body-bg-color, --color-success, --color-danger) instead of hardcoded colors.', enabled: true },
-  { text: 'Always add a visible error message in the block UI if data fails to load — never fail silently.', enabled: true }
+  { text: 'Always add a visible error message in the block UI if data fails to load — never fail silently.', enabled: true },
+  { text: 'Every block starts with a CONFIG object at the top of the script (including verboseLogging: false) and ends with a single init() function that is called once. No top-level work outside CONFIG / log helper / init.', enabled: true },
+  { text: 'Every block must define a log(...args) helper that gates on CONFIG.verboseLogging. Use log() instead of console.log everywhere. console.warn / console.error always fire.', enabled: true },
+  { text: 'For chart blocks, init() is exactly: function init() { window.AMCHARTS_LOADER.load().then(render); }. The render function disposes any prior root before creating a new one.', enabled: true }
 ];
 
 var customRules  = [];
@@ -3232,12 +3475,14 @@ function esc(str) {
     });
     BB.refreshMigrateButton();
     if (BB.blockBindings) BB.blockBindings.render();
+    if (BB.amcharts)      BB.amcharts.renderBanner();
   };
 
   // 3. After block selection, refresh column suggestions + bindings panel
   BB.afterBlockSelected = function() {
     BB.refreshMigrateButton();
     if (BB.blockBindings) BB.blockBindings.render();
+    if (BB.amcharts)      BB.amcharts.renderBanner();
   };
 
   // ── Version-aware system prompt augmentation ──────────────────────────────
@@ -4315,6 +4560,266 @@ function esc(str) {
     rows('');
     pop.querySelector('#bd-pick-search').addEventListener('input', function(e) { rows(e.target.value); });
     pop.querySelector('#bd-pick-search').focus();
+  };
+
+  // ════════════════════════════════════════════════════════════════════════
+  // AMCHARTS LOADER — detect, create, and extend the global loader block
+  // ════════════════════════════════════════════════════════════════════════
+  var AMC = BB.amcharts = {};
+
+  // Per-chart-type required modules. Maps to script files under cdn.amcharts.com/lib/5/
+  AMC.modulesFor = function(chartType) {
+    var t = (chartType || '').toLowerCase();
+    var base = ['index.js', 'themes/Animated.js'];
+    if (t === 'xy' || t === 'line' || t === 'column' || t === 'bar' || t === 'scatter') return base.concat(['xy.js']);
+    if (t === 'pie' || t === 'donut')     return base.concat(['percent.js']);
+    if (t === 'treemap')                  return base.concat(['hierarchy.js']);
+    if (t === 'sankey')                   return base.concat(['flow.js']);
+    if (t === 'map')                      return base.concat(['map.js', 'geodata.js']);
+    if (t === 'radar' || t === 'gauge')   return base.concat(['radar.js']);
+    return base;
+  };
+
+  // Canonical loader block code — must match the user's spec verbatim
+  AMC.canonicalLoaderHtml = function(scriptsArray) {
+    var scripts = scriptsArray && scriptsArray.length
+      ? scriptsArray
+      : ['index.js', 'percent.js', 'xy.js', 'themes/Animated.js', 'radar.js'];
+    var scriptList = scripts.map(function(s) { return "      '" + s + "'"; }).join(',\n');
+    return [
+      '<script>',
+      '// ============================================================================',
+      '// GLOBAL AMCHARTS v5 LOADER \u2014 Add this ONCE at the top of your page',
+      '// ============================================================================',
+      'window.AMCHARTS_LOADER = (function() {',
+      "  const AMCHARTS_CONFIG = {",
+      "    licenseKey: 'AM5C-3736-6373-6263',",
+      "    cdnBase: 'https://cdn.amcharts.com/lib/5/',",
+      "    scripts: [",
+      scriptList,
+      '    ]',
+      '  };',
+      '',
+      '  let loadingPromise = null;',
+      '',
+      '  function loadScript(src) {',
+      '    return new Promise((resolve, reject) => {',
+      '      const existing = document.querySelector(`script[src="${src}"]`);',
+      '      if (existing) { resolve(src); return; }',
+      "      const script = document.createElement('script');",
+      '      script.src = src;',
+      '      script.onload = () => resolve(src);',
+      '      script.onerror = () => reject(new Error(`Failed to load: ${src}`));',
+      '      document.head.appendChild(script);',
+      '    });',
+      '  }',
+      '',
+      '  async function loadAmCharts() {',
+      "    console.log('\ud83d\udd04 Loading amCharts v5 libraries...');",
+      '    try {',
+      '      for (const file of AMCHARTS_CONFIG.scripts) {',
+      '        const url = AMCHARTS_CONFIG.cdnBase + file;',
+      '        await loadScript(url);',
+      "        console.log(`  \u2713 Loaded: ${file}`);",
+      '      }',
+      '      if (window.am5 && AMCHARTS_CONFIG.licenseKey) {',
+      '        am5.addLicense(AMCHARTS_CONFIG.licenseKey);',
+      "        console.log('  \u2713 License key applied');",
+      '      }',
+      "      console.log('\u2705 amCharts v5 loaded successfully');",
+      '      return true;',
+      '    } catch (error) {',
+      "      console.error('\u274c Error loading amCharts:', error);",
+      '      throw error;',
+      '    }',
+      '  }',
+      '',
+      '  return {',
+      '    load: function() {',
+      '      if (loadingPromise) return loadingPromise;',
+      '      if (window.am5 && window.am5percent && window.am5xy && window.am5themes_Animated) {',
+      "        console.log('\u2705 amCharts already loaded');",
+      '        return Promise.resolve(true);',
+      '      }',
+      '      loadingPromise = loadAmCharts();',
+      '      return loadingPromise;',
+      '    }',
+      '  };',
+      '})();',
+      '<\/script>'
+    ].join('\n');
+  };
+
+  // Identify a loader block by signature in its HTML content
+  AMC.isLoaderBlock = function(block) {
+    if (!block) return false;
+    // Look for the signature in any of the locations a block stores its HTML
+    var jd  = block.json_data || {};
+    var raw = jd.html || jd.content || block.html || '';
+    var html = Array.isArray(raw) ? raw.join('\n') : String(raw || '');
+    return html.indexOf('window.AMCHARTS_LOADER') !== -1
+        || html.indexOf('AMCHARTS_LOADER = (function()') !== -1
+        || /AMCHARTS_CONFIG\s*=\s*\{/.test(html);
+  };
+
+  // Find the first loader block on the connected portal
+  AMC.findLoaderBlock = function() {
+    var blocks = window.allBlocks || [];
+    for (var i = 0; i < blocks.length; i++) {
+      if (AMC.isLoaderBlock(blocks[i])) return blocks[i];
+    }
+    return null;
+  };
+
+  // Parse the scripts array out of the loader block's HTML
+  AMC.parseLoaderScripts = function(block) {
+    if (!block) return [];
+    var jd = block.json_data || {};
+    var raw = jd.html || jd.content || block.html || '';
+    var html = Array.isArray(raw) ? raw.join('\n') : String(raw || '');
+    var match = html.match(/scripts\s*:\s*\[([\s\S]*?)\]/);
+    if (!match) return [];
+    return match[1].split(',').map(function(s) {
+      var t = s.trim().replace(/^['"]|['"]$/g, '');
+      return t;
+    }).filter(Boolean);
+  };
+
+  // Does the active block reference am5 / amCharts?
+  AMC.activeBlockUsesAmCharts = function() {
+    var html = '';
+    if (window.monacoHTML) html = window.monacoHTML.getValue() || '';
+    var intakeChart = (window._intake && window._intake.chartType) || '';
+    return intakeChart || /\bam5\b/.test(html) || /AMCHARTS_LOADER/.test(html);
+  };
+
+  // What's the chart type relevant to the active block?
+  AMC.activeChartType = function() {
+    var fromIntake = (window._intake && window._intake.chartType) || '';
+    if (fromIntake) return fromIntake;
+    var html = window.monacoHTML ? window.monacoHTML.getValue() : '';
+    // crude detection from common am5 module accessors
+    if (/am5xy\.\w+/.test(html))      return 'xy';
+    if (/am5percent\.\w+/.test(html)) return 'pie';
+    if (/am5map\.\w+/.test(html))     return 'map';
+    if (/am5radar\.\w+/.test(html))   return 'radar';
+    if (/am5flow\.\w+/.test(html))    return 'sankey';
+    if (/am5hierarchy\.\w+/.test(html))return 'treemap';
+    return '';
+  };
+
+  AMC.renderBanner = function() {
+    var banner    = document.getElementById('amcharts-banner');
+    if (!banner) return;
+    var titleEl   = document.getElementById('amc-banner-title');
+    var subEl     = document.getElementById('amc-banner-sub');
+    var actionsEl = document.getElementById('amc-banner-actions');
+
+    var usesAm = AMC.activeBlockUsesAmCharts();
+    if (!usesAm) { banner.style.display = 'none'; return; }
+
+    var loader = AMC.findLoaderBlock();
+    var chartType = AMC.activeChartType();
+
+    if (!loader) {
+      banner.className = 'miss';
+      banner.style.display = 'flex';
+      titleEl.textContent = 'No amCharts loader block detected on this portal';
+      subEl.innerHTML = 'Charts won\u2019t render until a single global loader block exists. ' +
+        'It loads amCharts v5 scripts once and applies your license key, so every chart block on a page can call <code>window.AMCHARTS_LOADER.load()</code>.';
+      actionsEl.innerHTML =
+        '<button class="amc-banner-btn" onclick="BB.amcharts.createLoader()">Create loader block</button>' +
+        '<button class="amc-banner-btn dismiss" onclick="document.getElementById(\'amcharts-banner\').style.display=\'none\'">Dismiss</button>';
+      return;
+    }
+
+    // Loader exists — check modules
+    var existing = AMC.parseLoaderScripts(loader);
+    var required = AMC.modulesFor(chartType);
+    var missing  = required.filter(function(m) { return existing.indexOf(m) === -1; });
+
+    if (missing.length) {
+      banner.className = 'miss';
+      banner.style.display = 'flex';
+      titleEl.textContent = 'amCharts loader is missing module' + (missing.length > 1 ? 's' : '') + ' for ' + (chartType || 'this chart');
+      subEl.innerHTML = 'Loader block <strong>' + esc(loader.name || '(loader)') +
+        '</strong> needs to include: <code>' + missing.join('</code>, <code>') + '</code>';
+      var stash = JSON.stringify(missing).replace(/"/g, '&quot;');
+      actionsEl.innerHTML =
+        '<button class="amc-banner-btn" data-add="' + stash + '" onclick="BB.amcharts.extendLoader(JSON.parse(this.getAttribute(\'data-add\').replace(/&quot;/g, String.fromCharCode(34))))">Add to loader</button>' +
+        '<button class="amc-banner-btn dismiss" onclick="document.getElementById(\'amcharts-banner\').style.display=\'none\'">Dismiss</button>';
+      return;
+    }
+
+    banner.className = 'ok';
+    banner.style.display = 'flex';
+    titleEl.textContent = 'amCharts loader OK';
+    subEl.innerHTML = 'Loader <strong>' + esc(loader.name || '(loader)') + '</strong> includes all required scripts for ' + (chartType || 'amCharts');
+    actionsEl.innerHTML =
+      '<button class="amc-banner-btn dismiss" onclick="document.getElementById(\'amcharts-banner\').style.display=\'none\'">Dismiss</button>';
+  };
+
+  AMC.createLoader = function() {
+    if (!confirm('Create a new amCharts loader block on the connected portal?\n\nIt will be named "AMCHARTS_LOADER" with the canonical loader code. Add it to your page in zPortal so chart blocks can use window.AMCHARTS_LOADER.load().')) return;
+    var html = AMC.canonicalLoaderHtml();
+    var payload = {
+      name: 'AMCHARTS_LOADER',
+      type: 'html',
+      data: {},
+      json_data: { html: [html] },
+      css: [],
+      tags: ['amcharts', 'loader'],
+      access: {}
+    };
+    var btn = document.querySelector('.amc-banner-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creating\u2026'; }
+    fetch('/api/proxy/api/blocks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok) {
+        alert('Create failed: ' + ((res.data && (res.data.detail || res.data.error)) || 'unknown'));
+        AMC.renderBanner();
+        return;
+      }
+      // Refresh blocks so the loader shows up in the registry / block list
+      if (typeof loadBlocks === 'function') loadBlocks();
+      setTimeout(AMC.renderBanner, 600);
+    })
+    .catch(function(e) { alert('Network error: ' + e.message); AMC.renderBanner(); });
+  };
+
+  AMC.extendLoader = function(missingScripts) {
+    if (!Array.isArray(missingScripts) || !missingScripts.length) return;
+    var loader = AMC.findLoaderBlock();
+    if (!loader) { alert('No loader block found.'); return; }
+    var existing = AMC.parseLoaderScripts(loader);
+    var merged = existing.slice();
+    missingScripts.forEach(function(m) { if (merged.indexOf(m) === -1) merged.push(m); });
+    var newHtml = AMC.canonicalLoaderHtml(merged);
+    var preserved = Object.assign({}, loader.json_data || {}, { html: [newHtml] });
+    var payload = {
+      name: loader.name,
+      type: loader.type || 'html',
+      data: loader.data || {},
+      tags: loader.tags || [],
+      access: loader.access || {},
+      json_data: preserved,
+      css: loader.css || []
+    };
+    fetch('/api/proxy/api/blocks/' + loader.id, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok) { alert('Update failed: ' + ((res.data && (res.data.detail || res.data.error)) || 'unknown')); return; }
+      if (typeof loadBlocks === 'function') loadBlocks();
+      setTimeout(AMC.renderBanner, 600);
+    })
+    .catch(function(e) { alert('Network error: ' + e.message); });
   };
 
   // ── Hook into existing UI lifecycle ────────────────────────────────────────

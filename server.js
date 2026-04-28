@@ -22,7 +22,7 @@ const CONFIG_PATH = path.join(__dirname, 'config.json');
 const SKILLS_DIR  = path.join(__dirname, 'skills');
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '40mb' }));   // base64 screenshots can run large
 
 // ── Session cookie cache ───────────────────────────────────────────────────────
 let sessionCookie  = null;   // e.g. "session=abc123; ..."
