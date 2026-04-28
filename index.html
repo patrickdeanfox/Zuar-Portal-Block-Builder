@@ -201,16 +201,51 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .sc-hint .sc-hint-cat.cols{color:var(--green)}
 
 /* ── Data preview panel ── */
-#data-preview{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:none}
-#data-preview.has-data{display:block}
+#data-preview{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:block}
 #data-preview-header{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}
 #data-preview-header:hover{background:var(--surface2)}
 #data-preview-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--primary);flex:1}
 #data-preview-meta{font-size:11px;color:var(--text-dim)}
 #data-preview-toggle{font-size:11px;color:var(--text-dim);transition:transform .15s}
 #data-preview-toggle.open{transform:rotate(180deg)}
-#data-preview-body{display:none;overflow-x:auto;max-height:180px;overflow-y:auto;border-top:1px solid var(--border)}
+#data-preview-body{display:none;overflow-x:auto;max-height:380px;overflow-y:auto;border-top:1px solid var(--border)}
 #data-preview-body.open{display:block}
+
+/* Block Data — bindings (DS / queries) */
+#bd-bindings{padding:10px 12px 4px;display:flex;flex-direction:column;gap:8px}
+.bd-section{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.bd-section.inactive{opacity:.55}
+.bd-section-head{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.bd-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim)}
+.bd-section-tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--surface3);color:var(--text-dim);letter-spacing:.4px}
+.bd-section.active .bd-section-tag{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-dim)}
+.bd-section-help{font-size:10px;color:var(--text-dim);font-style:italic}
+.bd-section-spacer{flex:1}
+.bd-add{background:var(--primary-bg);border:1px solid var(--primary-dim);color:var(--primary);width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:13px;line-height:1;font-weight:700}
+.bd-add:hover{background:var(--primary);color:var(--bg)}
+.bd-section.inactive .bd-add{display:none}
+.bd-list{padding:6px 8px;display:flex;flex-direction:column;gap:5px}
+.bd-empty{padding:10px;text-align:center;color:var(--text-dim);font-size:11px;font-style:italic}
+.bd-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;color:var(--text)}
+.bd-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.bd-item-meta{font-size:10px;color:var(--text-dim);font-family:var(--font-mono)}
+.bd-item-actions{display:flex;gap:4px}
+.bd-item-btn{background:none;border:1px solid transparent;color:var(--text-dim);width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:all .12s}
+.bd-item-btn:hover{border-color:var(--border2);color:var(--text)}
+.bd-item-btn.danger:hover{border-color:#4a1a1a;color:var(--red)}
+.bd-item-btn.primary:hover{border-color:var(--primary);color:var(--primary)}
+
+/* picker dropdown shared by DS + Query attach */
+.bd-picker{position:absolute;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:320px;max-height:340px;overflow:auto;z-index:1000;padding:6px}
+.bd-picker input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--radius);font-size:12px;font-family:var(--font-ui);margin-bottom:4px}
+.bd-picker input:focus{outline:none;border-color:var(--primary)}
+.bd-picker-section{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);padding:6px 8px 2px;font-weight:700}
+.bd-picker-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;cursor:pointer;color:var(--text);font-size:12px}
+.bd-picker-row:hover{background:var(--primary-bg);color:var(--primary)}
+.bd-picker-row .meta{margin-left:auto;font-size:10px;color:var(--text-dim);font-family:var(--font-mono)}
+.bd-picker-action{background:var(--primary-bg);border:1px dashed var(--primary-dim);color:var(--primary);padding:6px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;margin-top:4px;text-align:center}
+.bd-picker-action:hover{background:var(--primary);color:var(--bg)}
+.bd-picker-empty{padding:10px;text-align:center;color:var(--text-dim);font-size:11px;font-style:italic}
 .dp-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-mono)}
 .dp-table th{padding:5px 10px;text-align:left;color:var(--primary);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
 .dp-table td{padding:4px 10px;color:var(--text-dim);white-space:nowrap;border-bottom:1px solid var(--border)}
@@ -533,14 +568,40 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
         <button class="action-btn ai-btn" id="btn-ai-toggle" onclick="toggleAI()">&#10022; AI</button>
       </div>
 
-      <!-- Data preview panel -->
+      <!-- Block Data panel (data sources + queries + sample preview) -->
       <div id="data-preview">
         <div id="data-preview-header" onclick="toggleDataPreview()">
-          <span id="data-preview-label">&#9642; Datasource Preview</span>
+          <span id="data-preview-label">&#9642; Block Data</span>
           <span id="data-preview-meta"></span>
           <span id="data-preview-toggle">&#9660;</span>
         </div>
         <div id="data-preview-body">
+          <!-- BLOCK BINDINGS: data sources + queries -->
+          <div id="bd-bindings">
+            <div class="bd-section" id="bd-section-ds">
+              <div class="bd-section-head">
+                <span class="bd-section-title">Data Sources</span>
+                <span class="bd-section-tag" id="bd-tag-ds">1.17</span>
+                <span class="bd-section-help" id="bd-help-ds"></span>
+                <span class="bd-section-spacer"></span>
+                <button class="bd-add" id="bd-add-ds" title="Attach a datasource" onclick="BB.blockBindings.openDsPicker()">+</button>
+              </div>
+              <div class="bd-list" id="bd-ds-list"></div>
+            </div>
+
+            <div class="bd-section" id="bd-section-q">
+              <div class="bd-section-head">
+                <span class="bd-section-title">Queries</span>
+                <span class="bd-section-tag" id="bd-tag-q">1.18</span>
+                <span class="bd-section-help" id="bd-help-q"></span>
+                <span class="bd-section-spacer"></span>
+                <button class="bd-add" id="bd-add-q" title="Attach or create a query" onclick="BB.blockBindings.openQueryPicker()">+</button>
+              </div>
+              <div class="bd-list" id="bd-q-list"></div>
+            </div>
+          </div>
+
+          <!-- Sample data table -->
           <div id="data-preview-content"></div>
         </div>
       </div>
@@ -1647,6 +1708,7 @@ function doNewBlock() {
   showEditorContainer();
   showAIView();
   renderBlockList();
+  if (window.BB && BB.blockBindings) BB.blockBindings.render();
   setTimeout(function() { ge('chat-input').focus(); }, 50);
 }
 
@@ -1918,6 +1980,10 @@ function saveBlock() {
     json_data: Object.assign({}, (currentBlock && currentBlock.json_data) || {}, { html: [htmlVal] }),
     css:       cssVal ? [cssVal] : []
   };
+  // Persist 1.18 query bindings if any are present on the block
+  if (currentBlock && Array.isArray(currentBlock.ui_queries)) {
+    payload.ui_queries = currentBlock.ui_queries;
+  }
 
   var url    = currentBlock ? '/api/proxy/api/blocks/' + currentBlock.id : '/api/proxy/api/blocks';
   var method = currentBlock ? 'PUT' : 'POST';
@@ -1956,6 +2022,7 @@ function duplicateBlock() {
     json_data: currentBlock.json_data || {},
     css:       currentBlock.css       || []
   };
+  if (Array.isArray(currentBlock.ui_queries)) payload.ui_queries = currentBlock.ui_queries;
   fetch('/api/proxy/api/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then(function(r) { return r.json(); })
     .then(function(nb) {
@@ -2891,6 +2958,7 @@ function esc(str) {
     BB.detectVersion(true).then(function() { return BB.loadRegistry(); }).then(function() {
       BB.populateDsCredentialsSelect();
       BB.populateDsSourceSelect();
+      if (BB.blockBindings) BB.blockBindings.render();
     });
   };
 
@@ -2901,11 +2969,13 @@ function esc(str) {
       return { id: b.id, name: b.name, type: b.type, iid: 'content-1-' + b.id };
     });
     BB.refreshMigrateButton();
+    if (BB.blockBindings) BB.blockBindings.render();
   };
 
-  // 3. After block selection, refresh column suggestions
+  // 3. After block selection, refresh column suggestions + bindings panel
   BB.afterBlockSelected = function() {
     BB.refreshMigrateButton();
+    if (BB.blockBindings) BB.blockBindings.render();
   };
 
   // ── Version-aware system prompt augmentation ──────────────────────────────
@@ -3758,6 +3828,231 @@ function esc(str) {
       renderPreviewInto('ds-f-preview', res.data.columns || [], res.data.data || []);
       setPaneStatus('\u2713 ' + (res.data.data || []).length + ' row(s)', 'ok');
     }).catch(function(e) { btn.disabled = false; setPaneStatus('Network error: ' + e.message, 'err'); });
+  };
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BLOCK BINDINGS — Data Sources + Queries panel for the active block
+  // ════════════════════════════════════════════════════════════════════════
+  var BLK = BB.blockBindings = {};
+
+  // Read the primary DS attached to the block (1.17 shape).
+  BLK.primaryDsId = function() {
+    var b = window.currentBlock;
+    return (b && b.data && b.data.__source__) || '';
+  };
+
+  // Read attached queries (1.18 shape).
+  BLK.attachedQueryIds = function() {
+    var b = window.currentBlock;
+    if (!b || !b.ui_queries) return [];
+    return b.ui_queries.map(function(q) { return q && q.query_id; }).filter(Boolean);
+  };
+
+  // Render the panel based on active version + current block state.
+  BLK.render = function() {
+    var v       = BB.activeVersion();
+    var is117   = (v === '1.17');
+    var is118   = (v === '1.18');
+    var dsSec   = document.getElementById('bd-section-ds');
+    var qSec    = document.getElementById('bd-section-q');
+    var dsTag   = document.getElementById('bd-tag-ds');
+    var qTag    = document.getElementById('bd-tag-q');
+    var dsHelp  = document.getElementById('bd-help-ds');
+    var qHelp   = document.getElementById('bd-help-q');
+    var dsList  = document.getElementById('bd-ds-list');
+    var qList   = document.getElementById('bd-q-list');
+    if (!dsSec || !qSec) return;
+
+    // active/inactive styling per version
+    dsSec.classList.toggle('active',   is117 || (!is117 && !is118));
+    dsSec.classList.toggle('inactive', is118);
+    qSec.classList.toggle('active',    is118);
+    qSec.classList.toggle('inactive',  is117);
+
+    dsTag.textContent = '1.17';
+    qTag.textContent  = '1.18';
+    dsHelp.textContent = is118 ? '(informational on 1.18 \u2014 use Queries instead)' : '';
+    qHelp.textContent  = is117 ? '(unavailable on 1.17)' : '';
+
+    // ── Data Sources list ─────────────────────────────────────────────────
+    var dsId = BLK.primaryDsId();
+    if (!window.currentBlock) {
+      dsList.innerHTML = '<div class="bd-empty">Select or create a block to attach a datasource.</div>';
+    } else if (!dsId) {
+      dsList.innerHTML = '<div class="bd-empty">No datasource attached. Click <strong>+</strong> to pick one.</div>';
+    } else {
+      var match = (BB.registry.datasources || []).filter(function(d) { return d.id === dsId; })[0];
+      var name  = match ? match.name : '(unknown DS)';
+      dsList.innerHTML =
+        '<div class="bd-item">' +
+          '<span class="bd-item-name">' + esc(name) + '</span>' +
+          '<span class="bd-item-meta">' + esc(dsId.slice(0, 8)) + '\u2026</span>' +
+          '<span class="bd-item-actions">' +
+            '<button class="bd-item-btn primary" title="Edit datasource in DS modal" onclick="BB.dsModal.openPrefilled(\'datasource\',{}); setTimeout(function(){BB.dsModal.selectItem(\'datasource\',\'' + escAttr(dsId) + '\')},250)">\u270e</button>' +
+            (is117 ? '<button class="bd-item-btn primary" title="Make a query from this datasource" onclick="BB.blockBindings.makeQueryFromDs()">\u26a1</button>' : '') +
+            '<button class="bd-item-btn danger" title="Detach datasource" onclick="BB.blockBindings.detachDs()">\u00d7</button>' +
+          '</span>' +
+        '</div>';
+    }
+
+    // ── Queries list ──────────────────────────────────────────────────────
+    var qIds = BLK.attachedQueryIds();
+    if (!window.currentBlock) {
+      qList.innerHTML = '<div class="bd-empty">Select or create a block to attach queries.</div>';
+    } else if (is117) {
+      qList.innerHTML = '<div class="bd-empty">Queries are 1.18-only. Migrate this block to use queries.</div>';
+    } else if (!qIds.length) {
+      qList.innerHTML = '<div class="bd-empty">No queries attached. Click <strong>+</strong> to add one.</div>';
+    } else {
+      qList.innerHTML = qIds.map(function(qid, i) {
+        var q = (BB.registry.queries || []).filter(function(x) { return x.id === qid; })[0];
+        var label = q ? (q.name || (q.raw_sql ? q.raw_sql.slice(0, 50) : qid)) : '(unknown query)';
+        return '<div class="bd-item">' +
+                 '<span class="bd-item-name">' + esc(label) + '</span>' +
+                 '<span class="bd-item-meta">' + esc(qid.slice(0, 8)) + '\u2026</span>' +
+                 '<span class="bd-item-actions">' +
+                   '<button class="bd-item-btn primary" title="Edit query in DS modal" onclick="BB.dsModal.openPrefilled(\'query\',{}); setTimeout(function(){BB.dsModal.selectItem(\'query\',\'' + escAttr(qid) + '\')},250)">\u270e</button>' +
+                   '<button class="bd-item-btn danger" title="Detach query" onclick="BB.blockBindings.detachQuery(' + i + ')">\u00d7</button>' +
+                 '</span>' +
+               '</div>';
+      }).join('');
+    }
+  };
+
+  // ── Attach / detach DS (1.17) ─────────────────────────────────────────────
+  BLK.attachDs = function(dsId) {
+    if (!window.currentBlock) {
+      // Allow attaching on an unsaved block by initialising a stub
+      window.currentBlock = window.currentBlock || { type: 'html', data: {} };
+    }
+    if (!window.currentBlock.data) window.currentBlock.data = {};
+    window.currentBlock.data.__source__ = dsId;
+    BLK.render();
+    if (typeof markDirty === 'function') markDirty();
+    if (typeof fetchBlockData === 'function') fetchBlockData(window.currentBlock);
+  };
+  BLK.detachDs = function() {
+    if (!window.currentBlock || !window.currentBlock.data) return;
+    delete window.currentBlock.data.__source__;
+    BLK.render();
+    if (typeof markDirty === 'function') markDirty();
+    if (typeof hideDataPreview === 'function') hideDataPreview();
+    window.blockDataContext = null;
+  };
+
+  // ── Attach / detach query (1.18) ──────────────────────────────────────────
+  BLK.attachQuery = function(qid) {
+    if (!window.currentBlock) window.currentBlock = { type: 'html', data: {}, ui_queries: [] };
+    if (!Array.isArray(window.currentBlock.ui_queries)) window.currentBlock.ui_queries = [];
+    // dedupe
+    if (window.currentBlock.ui_queries.some(function(q) { return q && q.query_id === qid; })) return;
+    window.currentBlock.ui_queries.push({ query_id: qid });
+    BLK.render();
+    if (typeof markDirty === 'function') markDirty();
+  };
+  BLK.detachQuery = function(idx) {
+    if (!window.currentBlock || !Array.isArray(window.currentBlock.ui_queries)) return;
+    window.currentBlock.ui_queries.splice(idx, 1);
+    BLK.render();
+    if (typeof markDirty === 'function') markDirty();
+  };
+
+  // ── Make a query from the block's primary DS ──────────────────────────────
+  BLK.makeQueryFromDs = function() {
+    var dsId = BLK.primaryDsId();
+    if (!dsId) {
+      alert('Attach a datasource to this block first, then create a query from it.');
+      return;
+    }
+    var ds = (BB.registry.datasources || []).filter(function(d) { return d.id === dsId; })[0];
+    var alias = (ds && ds.name) ? ds.name.replace(/[^A-Za-z0-9_]/g, '_').toLowerCase().slice(0, 24) : 'main';
+    BB.dsModal.openPrefilled('query', {
+      name: ds ? (ds.name + ' - query') : '',
+      datasources: [{ id: dsId, alias: alias }],
+      raw_sql: 'SELECT * FROM ' + alias + ' LIMIT 100'
+    });
+  };
+
+  // ── Inline pickers (small floating dropdowns anchored under the +) ────────
+  BLK._closePicker = function() {
+    var p = document.getElementById('bd-active-picker');
+    if (p) p.remove();
+    document.removeEventListener('mousedown', BLK._outsideClick, true);
+  };
+  BLK._outsideClick = function(e) {
+    var p = document.getElementById('bd-active-picker');
+    if (!p) return;
+    if (!p.contains(e.target)) BLK._closePicker();
+  };
+  function _pickerAnchor(btn) {
+    var rect = btn.getBoundingClientRect();
+    var pop = document.createElement('div');
+    pop.id = 'bd-active-picker';
+    pop.className = 'bd-picker';
+    pop.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+    pop.style.left = Math.max(8, rect.right - 320 + window.scrollX) + 'px';
+    document.body.appendChild(pop);
+    setTimeout(function() { document.addEventListener('mousedown', BLK._outsideClick, true); }, 30);
+    return pop;
+  }
+
+  BLK.openDsPicker = function() {
+    BLK._closePicker();
+    var pop = _pickerAnchor(document.getElementById('bd-add-ds'));
+    pop.innerHTML =
+      '<input id="bd-pick-search" type="text" placeholder="Filter datasources\u2026"/>' +
+      '<div class="bd-picker-section">Saved datasources</div>' +
+      '<div id="bd-pick-rows"></div>' +
+      '<div class="bd-picker-action" onclick="BB.blockBindings._closePicker(); BB.dsModal.openPrefilled(\'datasource\',{})">+ New datasource\u2026</div>';
+    function rows(filter) {
+      var f = (filter || '').toLowerCase();
+      var rs = (BB.registry.datasources || []).filter(function(d) {
+        return !f || (d.name || '').toLowerCase().indexOf(f) !== -1 || d.id.indexOf(f) !== -1;
+      });
+      var host = pop.querySelector('#bd-pick-rows');
+      host.innerHTML = rs.length ? rs.map(function(d) {
+        return '<div class="bd-picker-row" onclick="BB.blockBindings._closePicker(); BB.blockBindings.attachDs(\'' + escAttr(d.id) + '\')">' +
+          '<span>' + esc(d.name) + '</span>' +
+          '<span class="meta">' + esc(d.id.slice(0, 8)) + '\u2026</span>' +
+        '</div>';
+      }).join('') : '<div class="bd-picker-empty">No datasources \u2014 create one below.</div>';
+    }
+    rows('');
+    pop.querySelector('#bd-pick-search').addEventListener('input', function(e) { rows(e.target.value); });
+    pop.querySelector('#bd-pick-search').focus();
+  };
+
+  BLK.openQueryPicker = function() {
+    if (BB.activeVersion() === '1.17') { alert('Queries are 1.18-only.'); return; }
+    BLK._closePicker();
+    var pop = _pickerAnchor(document.getElementById('bd-add-q'));
+    var dsId = BLK.primaryDsId();
+    var newQAction = dsId
+      ? '<div class="bd-picker-action" onclick="BB.blockBindings._closePicker(); BB.blockBindings.makeQueryFromDs()">+ New query from this block\u2019s datasource\u2026</div>'
+      : '<div class="bd-picker-action" onclick="BB.blockBindings._closePicker(); BB.dsModal.openPrefilled(\'query\',{})">+ New query\u2026</div>';
+    pop.innerHTML =
+      '<input id="bd-pick-search" type="text" placeholder="Filter queries\u2026"/>' +
+      '<div class="bd-picker-section">Saved queries</div>' +
+      '<div id="bd-pick-rows"></div>' +
+      newQAction;
+    function rows(filter) {
+      var f = (filter || '').toLowerCase();
+      var rs = (BB.registry.queries || []).filter(function(q) {
+        var hay = (q.name || '') + ' ' + (q.raw_sql || '') + ' ' + q.id;
+        return !f || hay.toLowerCase().indexOf(f) !== -1;
+      });
+      var host = pop.querySelector('#bd-pick-rows');
+      host.innerHTML = rs.length ? rs.map(function(q) {
+        var label = q.name || (q.raw_sql ? q.raw_sql.slice(0, 50) : q.id);
+        return '<div class="bd-picker-row" onclick="BB.blockBindings._closePicker(); BB.blockBindings.attachQuery(\'' + escAttr(q.id) + '\')">' +
+          '<span>' + esc(label) + '</span>' +
+          '<span class="meta">' + esc(q.id.slice(0, 8)) + '\u2026</span>' +
+        '</div>';
+      }).join('') : '<div class="bd-picker-empty">No queries yet \u2014 create one below.</div>';
+    }
+    rows('');
+    pop.querySelector('#bd-pick-search').addEventListener('input', function(e) { rows(e.target.value); });
+    pop.querySelector('#bd-pick-search').focus();
   };
 
   // ── Hook into existing UI lifecycle ────────────────────────────────────────
