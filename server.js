@@ -124,6 +124,10 @@ function portalLogin(cfg) {
       headers:  { 'Accept': 'application/json' },
     };
 
+    const stamp = () => new Date().toISOString().slice(11, 23);
+    const mask  = k => !k ? '(none)' : (k.length < 14 ? k.slice(0,4)+'\u2026' : k.slice(0,8)+'\u2026'+k.slice(-4));
+    console.log(`[${stamp()}] auth -> POST(GET) ${parsed.hostname}/auth/login api_key=${mask(apiKey)} user_id=${userId.slice(0,8)}\u2026`);
+
     const req = lib.request(options, res => {
       // Collect all Set-Cookie headers
       const cookies = res.headers['set-cookie'];
@@ -138,16 +142,17 @@ function portalLogin(cfg) {
           sessionCookie  = cookieHeader;
           sessionPortal  = portalUrl;
           sessionVersion = null; // reset; will be detected lazily
-          console.log(`[auth] Logged in to ${parsed.hostname} — cookie acquired`);
+          console.log(`[${stamp()}] auth <- ${res.statusCode} cookie OK (${cookies.length} Set-Cookie)`);
           resolve(cookieHeader);
         } else if (res.statusCode >= 200 && res.statusCode < 400) {
           // Login succeeded but no cookie — some portals redirect with cookie already set
-          console.log(`[auth] Login ${res.statusCode} — no Set-Cookie header, proceeding`);
+          console.log(`[${stamp()}] auth <- ${res.statusCode} no Set-Cookie, body=${(body||'').slice(0, 200)}`);
           sessionCookie  = '';
           sessionPortal  = portalUrl;
           sessionVersion = null;
           resolve('');
         } else {
+          console.log(`[${stamp()}] auth <- ${res.statusCode} FAIL body=${(body||'').slice(0, 300)}`);
           reject(new Error(`Login failed: HTTP ${res.statusCode} — ${body.slice(0, 200)}`));
         }
       });
@@ -257,19 +262,40 @@ app.get('/api/skills/:name', (req, res) => {
   } catch (err) { res.status(500).json({ ok: false, error: err.message }); }
 });
 
+// ── Debug logging helpers ─────────────────────────────────────────────────────
+let _reqCounter = 0;
+const nextReqId = () => '#' + (++_reqCounter).toString().padStart(4, '0');
+const ts        = () => new Date().toISOString().slice(11, 23);   // HH:MM:SS.mmm
+function maskKey(k) {
+  if (!k) return '(none)';
+  if (k.length < 14) return k.slice(0, 4) + '\u2026';
+  return k.slice(0, 8) + '\u2026' + k.slice(-4);
+}
+function snippet(s, n) {
+  if (!s) return '';
+  s = String(s).replace(/\s+/g, ' ').trim();
+  return s.length > n ? s.slice(0, n) + '\u2026' : s;
+}
+
 // ── POST /api/anthropic ───────────────────────────────────────────────────────
 app.post('/api/anthropic', (req, res) => {
+  const rid = nextReqId();
   let cfg;
   try { cfg = readConfig(); } catch (err) {
+    console.log(`[${ts()}] anthropic ${rid} CONFIG ERR — ${err.message}`);
     return res.status(500).json({ ok: false, error: 'Cannot read config: ' + err.message });
   }
   const apiKey = cfg.anthropic?.apiKey || '';
-  if (!apiKey || apiKey.startsWith('sk-ant-your-'))
+  if (!apiKey || apiKey.startsWith('sk-ant-your-')) {
+    console.log(`[${ts()}] anthropic ${rid} REJECTED — API key not configured`);
     return res.status(400).json({ ok: false, error: 'Anthropic API key not configured' });
+  }
 
   const model   = cfg.anthropic?.model || 'claude-sonnet-4-6';
   const body    = { model, max_tokens: 8096, ...req.body };
   const bodyStr = JSON.stringify(body);
+
+  console.log(`[${ts()}] anthropic ${rid} -> ${model} key=${maskKey(apiKey)} bytes=${bodyStr.length}`);
 
   const options = {
     hostname: 'api.anthropic.com', port: 443, path: '/v1/messages', method: 'POST',
@@ -282,13 +308,26 @@ app.post('/api/anthropic', (req, res) => {
   };
 
   const proxyReq = https.request(options, proxyRes => {
-    res.status(proxyRes.statusCode);
+    const status = proxyRes.statusCode;
+    res.status(status);
     ['content-type', 'transfer-encoding'].forEach(h => {
       if (proxyRes.headers[h]) res.setHeader(h, proxyRes.headers[h]);
     });
-    proxyRes.pipe(res);
+    if (status >= 400) {
+      // Buffer error responses so we can log the body
+      let body = '';
+      proxyRes.on('data', c => { body += c; });
+      proxyRes.on('end', () => {
+        console.log(`[${ts()}] anthropic ${rid} <- ${status}  ERR: ${snippet(body, 400)}`);
+        res.send(body);
+      });
+    } else {
+      console.log(`[${ts()}] anthropic ${rid} <- ${status}  OK`);
+      proxyRes.pipe(res);
+    }
   });
   proxyReq.on('error', err => {
+    console.log(`[${ts()}] anthropic ${rid} NETWORK ERR — ${err.message}`);
     if (!res.headersSent) res.status(502).json({ ok: false, error: err.message });
   });
   proxyReq.write(bodyStr);
@@ -297,20 +336,26 @@ app.post('/api/anthropic', (req, res) => {
 
 // ── ALL /api/proxy/* ──────────────────────────────────────────────────────────
 app.all('/api/proxy/*', async (req, res) => {
+  const rid = nextReqId();
   let cfg;
   try { cfg = readConfig(); } catch (err) {
+    console.log(`[${ts()}] proxy ${rid} CONFIG ERR — ${err.message}`);
     return res.status(500).json({ ok: false, error: 'Cannot read config: ' + err.message });
   }
 
   const portalUrl = (cfg.portal?.url || '').replace(/\/$/, '');
-  if (!portalUrl)
+  if (!portalUrl) {
+    console.log(`[${ts()}] proxy ${rid} REJECTED — portal URL not configured`);
     return res.status(400).json({ ok: false, error: 'Portal URL not configured' });
+  }
 
   // Login if we don't have a session yet, or if the portal URL changed
   if (!sessionCookie && sessionCookie !== '') {
     try {
+      console.log(`[${ts()}] proxy ${rid} -> first login (no session) for ${portalUrl}`);
       await portalLogin(cfg);
     } catch(err) {
+      console.log(`[${ts()}] proxy ${rid} LOGIN FAIL — ${err.message}`);
       return res.status(401).json({ ok: false, error: 'Portal login failed: ' + err.message });
     }
   }
@@ -355,18 +400,29 @@ app.all('/api/proxy/*', async (req, res) => {
     proxyReq.end();
   });
 
+  const downstreamPath = req.path.replace(/^\/api\/proxy/, '') || '/';
+  console.log(`[${ts()}] proxy ${rid} -> ${req.method} ${downstreamPath}  cookie=${sessionCookie ? 'yes' : 'no'} xapikey=${portalApiKey ? maskKey(portalApiKey) : '(none)'}`);
+
   try {
     let result = await doRequest(sessionCookie);
 
     // If 401, re-login once and retry
     if (result.status === 401) {
-      console.log('[auth] Got 401 — re-logging in…');
+      console.log(`[${ts()}] proxy ${rid} got 401 with session cookie, re-logging in\u2026`);
       try {
         const newCookie = await portalLogin(cfg);
         result = await doRequest(newCookie);
+        console.log(`[${ts()}] proxy ${rid} retry after re-login -> ${result.status}`);
       } catch(loginErr) {
+        console.log(`[${ts()}] proxy ${rid} RE-LOGIN FAIL — ${loginErr.message}`);
         return res.status(401).json({ ok: false, error: 'Re-login failed: ' + loginErr.message });
       }
+    }
+
+    if (result.status >= 400) {
+      console.log(`[${ts()}] proxy ${rid} <- ${result.status}  ERR: ${snippet(result.body, 400)}`);
+    } else {
+      console.log(`[${ts()}] proxy ${rid} <- ${result.status}`);
     }
 
     res.status(result.status);
@@ -376,6 +432,7 @@ app.all('/api/proxy/*', async (req, res) => {
     res.send(result.body);
 
   } catch(err) {
+    console.log(`[${ts()}] proxy ${rid} NETWORK ERR — ${err.message}`);
     if (!res.headersSent) res.status(502).json({ ok: false, error: err.message });
   }
 });
