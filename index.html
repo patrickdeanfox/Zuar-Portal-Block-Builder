@@ -150,18 +150,55 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .msg-bubble code{font-family:var(--font-mono);font-size:12px}
 .msg-bubble p+p{margin-top:8px}
 .msg-thinking{display:flex;gap:5px;align-items:center;padding:12px 14px}
+
+/* ── New-block intake card (in AI panel) ── */
+.intake-card{align-self:stretch;max-width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;display:flex;flex-direction:column;gap:14px;animation:fadeUp .25s ease}
+.intake-card h3{margin:0;font-size:14px;color:var(--text-bright);display:flex;align-items:center;gap:8px}
+.intake-card h3 .step-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--primary);background:var(--primary-bg);border:1px solid var(--primary-dim);padding:2px 8px;border-radius:99px}
+.intake-card .intake-sub{font-size:12px;color:var(--text-dim);margin-top:-8px}
+.intake-row{display:flex;flex-direction:column;gap:6px}
+.intake-row > label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);font-weight:600}
+.intake-row > .intake-help{font-size:11px;color:var(--text-dim);font-style:italic}
+.intake-chips{display:flex;flex-wrap:wrap;gap:5px}
+.intake-chip{cursor:pointer;font-size:11px;padding:5px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg);color:var(--text-dim);transition:all .12s;font-family:var(--font-ui)}
+.intake-chip:hover{color:var(--text);border-color:var(--primary-dim)}
+.intake-chip.active{background:var(--primary-bg);border-color:var(--primary);color:var(--primary);font-weight:600}
+.intake-row select,.intake-row input[type=text],.intake-row input[type=number],.intake-row textarea{background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);width:100%}
+.intake-row select:focus,.intake-row input:focus,.intake-row textarea:focus{outline:none;border-color:var(--primary)}
+.intake-row textarea{font-family:var(--font-mono);font-size:12px;resize:vertical;min-height:60px}
+.intake-checks{display:flex;flex-direction:column;gap:6px}
+.intake-checks label{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+.intake-checks input[type=checkbox]{margin-top:3px;accent-color:var(--primary)}
+.intake-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.intake-actions .btn{padding:7px 14px;border-radius:var(--radius);font-size:12px;cursor:pointer;font-family:var(--font-ui);border:1px solid var(--border2);background:var(--surface);color:var(--text-dim)}
+.intake-actions .btn.btn-primary{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.intake-actions .btn.btn-primary:hover{background:var(--primary-dim)}
+.intake-actions .btn.btn-ghost:hover{color:var(--text);border-color:var(--primary-dim)}
+
+/* "Open in DS modal" suggestion CTA inside chat bubbles */
+.ds-suggest{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px dashed var(--primary-dim);border-radius:var(--radius);padding:8px 12px;margin:8px 0;font-size:12px}
+.ds-suggest .ds-suggest-label{flex:1;color:var(--text-dim)}
+.ds-suggest .ds-suggest-label strong{color:var(--primary);text-transform:capitalize}
+.ds-suggest .btn-suggest{background:var(--primary-bg);border:1px solid var(--primary);color:var(--primary);font-weight:600;font-size:11px;padding:5px 10px;border-radius:var(--radius);cursor:pointer;font-family:var(--font-ui)}
+.ds-suggest .btn-suggest:hover{background:var(--primary);color:var(--bg)}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:.4;animation:pulse 1.2s ease infinite}
 .dot:nth-child(2){animation-delay:.2s}
 .dot:nth-child(3){animation-delay:.4s}
 @keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
 
-#chat-input-area{padding:12px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+#chat-input-wrap{padding:8px 12px 12px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+#chat-input-area{display:flex;gap:8px;align-items:flex-end}
 #chat-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);resize:none;min-height:42px;max-height:140px;line-height:1.5;transition:border-color .15s;overflow-y:auto}
 #chat-input:focus{outline:none;border-color:var(--primary)}
 #chat-input::placeholder{color:var(--text-dim)}
 #btn-send{background:var(--primary);border:none;color:var(--bg);width:38px;height:38px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
 #btn-send:hover{background:var(--primary-dim)}
 #btn-send:disabled{background:#1a4a40;cursor:not-allowed;color:#3a8a78}
+.sc-hint{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:10.5px;color:var(--text-dim);font-family:var(--font-ui);user-select:none;line-height:1.6}
+.sc-hint .sc-hint-key{display:inline-flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border2);color:var(--primary);padding:1px 6px;border-radius:99px;font-weight:700;font-family:var(--font-mono);font-size:10px}
+.sc-hint .sc-hint-cat{display:inline-block;background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);padding:1px 7px;border-radius:99px;font-size:10px}
+.sc-hint .sc-hint-cat.charts{color:#c8b3ff}
+.sc-hint .sc-hint-cat.cols{color:var(--green)}
 
 /* ── Data preview panel ── */
 #data-preview{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:none}
@@ -535,9 +572,20 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
             <button class="ai-tool-btn back" onclick="toggleAI()">&larr; Back to Editor</button>
           </div>
           <div id="chat-messages"></div>
-          <div id="chat-input-area">
-            <textarea id="chat-input" placeholder="Describe the block you want, or ask to modify the current code..." rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
-            <button id="btn-send" onclick="sendChat()" title="Send">&#8679;</button>
+          <div id="chat-input-wrap">
+            <div id="chat-input-area">
+              <textarea id="chat-input" placeholder="Describe the block, or ask to modify the current code... type :  to insert names" rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+              <button id="btn-send" onclick="sendChat()" title="Send">&#8679;</button>
+            </div>
+            <div class="sc-hint" title="Type a colon (:) anywhere in the input to autocomplete from your portal">
+              <span class="sc-hint-key">: type to autocomplete</span>
+              <span class="sc-hint-cat">blocks</span>
+              <span class="sc-hint-cat">datasources</span>
+              <span class="sc-hint-cat">queries</span>
+              <span class="sc-hint-cat">credentials</span>
+              <span class="sc-hint-cat cols">columns</span>
+              <span class="sc-hint-cat charts">chart types</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1471,6 +1519,7 @@ function doSelectBlock(id) {
 
   currentBlock = block;
   chatHistory  = [];
+  window._intakeContext = null;
   isAIView     = false;
   // Close history panel when switching blocks
   ghHistoryOpen = false;
@@ -1592,12 +1641,208 @@ function doNewBlock() {
   setSaveStatus('', '');
 
   ge('chat-messages').innerHTML = '';
-  appendChatMsg('ai', 'Hi! Describe the block you want and I\'ll generate the HTML+JS and CSS for you. Be as specific as you like \u2014 chart type, data, styling, etc.');
+  // Show the structured intake card before the user types anything.
+  renderIntakeCard();
 
   showEditorContainer();
   showAIView();
   renderBlockList();
   setTimeout(function() { ge('chat-input').focus(); }, 50);
+}
+
+// ── New-block intake card ──────────────────────────────────────────────────
+// State for the in-flight intake. Cleared once user submits or cancels.
+window._intake = null;
+
+function renderIntakeCard() {
+  var registry = (window.BB && window.BB.registry) || { datasources: [], queries: [], chartTypes: [] };
+  var dsList   = registry.datasources || [];
+  var qList    = registry.queries     || [];
+  var chartTypes = (registry.chartTypes || []).map(function(c) { return c.value; });
+
+  // Default state
+  window._intake = {
+    blockType: 'html',
+    chartType: '',
+    dsId: '',
+    dsName: '',
+    queryCount: 1,
+    interactions: { sendsFilters: false, clickActions: false, drilldown: false },
+    notes: ''
+  };
+
+  var dsOpts = '<option value="">No datasource (fetch with zPortal API or hardcode)</option>' +
+    dsList.map(function(d) { return '<option value="ds:' + escAttr(d.id) + '">' + esc(d.name) + ' (DS)</option>'; }).join('') +
+    qList.map(function(q) {
+      var label = q.raw_sql ? q.raw_sql.slice(0, 50) : q.id;
+      return '<option value="q:' + escAttr(q.id) + '">' + esc(label) + ' (Query 1.18)</option>';
+    }).join('');
+
+  var chartChips = chartTypes.map(function(t) {
+    return '<button class="intake-chip" data-chart="' + escAttr(t) + '" onclick="intakeSetChart(\'' + escAttr(t) + '\')">' + esc(t) + '</button>';
+  }).join('');
+
+  var html =
+    '<div class="intake-card" id="intake-card">' +
+      '<h3><span class="step-badge">New block</span> Tell me what to build</h3>' +
+      '<div class="intake-sub">A few quick answers and I\'ll plan it out, write the SQL, and generate the code. You can change anything later.</div>' +
+
+      '<div class="intake-row">' +
+        '<label>Block type</label>' +
+        '<div class="intake-help">HTML for now \u2014 amCharts and other types come from inside the HTML block.</div>' +
+        '<div class="intake-chips"><button class="intake-chip active">html</button></div>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
+        '<label>Chart type</label>' +
+        '<div class="intake-help">Pick a chart, or skip if it\'s not a chart block.</div>' +
+        '<div class="intake-chips" id="intake-chart-chips">' + chartChips +
+          '<button class="intake-chip" data-chart="" onclick="intakeSetChart(\'\')">none / not a chart</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
+        '<label>Data source</label>' +
+        '<div class="intake-help">Pick one of your existing portal datasources or queries. If none fit, I\'ll help you make one in the next step.</div>' +
+        '<select id="intake-ds" onchange="intakeSetDs(this.value)">' + dsOpts + '</select>' +
+        '<div style="display:flex;gap:6px;margin-top:4px">' +
+          '<button class="btn btn-ghost intake-chip" onclick="BB.dsModal.openPrefilled(\'datasource\',{})">+ New datasource</button>' +
+          '<button class="btn btn-ghost intake-chip" onclick="BB.dsModal.openPrefilled(\'query\',{})">+ New query</button>' +
+          '<button class="btn btn-ghost intake-chip" onclick="BB.dsModal.openPrefilled(\'credential\',{})">+ New credential</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
+        '<label>How many queries does it need?</label>' +
+        '<div class="intake-help">Estimate is fine \u2014 helps me plan whether to use one shared dataset or split logic across queries.</div>' +
+        '<input type="number" id="intake-qcount" min="0" max="20" value="1" oninput="window._intake.queryCount = parseInt(this.value)||0"/>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
+        '<label>Special interactions</label>' +
+        '<div class="intake-checks">' +
+          '<label><input type="checkbox" onchange="window._intake.interactions.sendsFilters = this.checked"/> Sets portal filters when the user clicks/selects (e.g. drives other blocks on the page)</label>' +
+          '<label><input type="checkbox" onchange="window._intake.interactions.clickActions = this.checked"/> Clicks trigger actions (open URL, write back to DB, run db_modification)</label>' +
+          '<label><input type="checkbox" onchange="window._intake.interactions.drilldown = this.checked"/> Reactive to other filters / drill-down behavior</label>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="intake-row">' +
+        '<label>Anything else? (optional)</label>' +
+        '<textarea id="intake-notes" placeholder="Style preferences, specific behaviors, edge cases, columns to highlight..." oninput="window._intake.notes = this.value"></textarea>' +
+      '</div>' +
+
+      '<div class="intake-actions">' +
+        '<button class="btn btn-ghost" onclick="cancelIntake()">Skip \u2014 just chat</button>' +
+        '<button class="btn btn-primary" onclick="submitIntake()">Plan this block \u2192</button>' +
+      '</div>' +
+    '</div>';
+
+  var wrap = ge('chat-messages');
+  var div  = document.createElement('div');
+  div.innerHTML = html;
+  wrap.appendChild(div.firstChild);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function escAttr(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/'/g, "\\'"); }
+
+function intakeSetChart(t) {
+  if (!window._intake) return;
+  window._intake.chartType = t;
+  var chips = document.querySelectorAll('#intake-chart-chips .intake-chip');
+  chips.forEach(function(c) { c.classList.toggle('active', c.getAttribute('data-chart') === t); });
+}
+
+function intakeSetDs(value) {
+  if (!window._intake) return;
+  if (!value) { window._intake.dsId = ''; window._intake.dsName = ''; return; }
+  var parts = value.split(':');
+  var kind  = parts[0];                          // 'ds' or 'q'
+  var id    = parts.slice(1).join(':');
+  var registry = (window.BB && window.BB.registry) || { datasources: [], queries: [] };
+  var match;
+  if (kind === 'ds') match = registry.datasources.filter(function(d){return d.id===id;})[0];
+  else               match = registry.queries.filter(function(q){return q.id===id;})[0];
+  window._intake.dsId   = id;
+  window._intake.dsKind = kind === 'q' ? 'query' : 'datasource';
+  window._intake.dsName = match ? (match.name || match.raw_sql || match.id) : id;
+}
+
+function cancelIntake() {
+  var card = ge('chat-messages').querySelector('#intake-card');
+  if (card) card.remove();
+  window._intake = null;
+  appendChatMsg('ai', 'No problem \u2014 just describe what you want and I\'ll build it. Type **:** anytime to insert a datasource, query, column, or chart type.');
+  setTimeout(function() { ge('chat-input').focus(); }, 30);
+}
+
+function submitIntake() {
+  var i = window._intake;
+  if (!i) return;
+  // Replace the card with a summary bubble
+  var card = ge('chat-messages').querySelector('#intake-card');
+  if (card) card.remove();
+
+  var summaryLines = [
+    '**Block type:** ' + i.blockType,
+    '**Chart type:** ' + (i.chartType || 'none / not a chart'),
+    '**Data source:** ' + (i.dsName ? (i.dsName + '  \u00b7  ' + (i.dsKind || 'datasource') + ' `' + (i.dsId||'') + '`') : 'not selected — I\'ll help you create one'),
+    '**Queries planned:** ' + i.queryCount,
+    '**Interactions:** ' + (
+      [
+        i.interactions.sendsFilters && 'sets filters on click',
+        i.interactions.clickActions && 'click actions (URL/write-back)',
+        i.interactions.drilldown    && 'reactive drill-down'
+      ].filter(Boolean).join('; ') || 'none specified'
+    )
+  ];
+  if (i.notes && i.notes.trim()) summaryLines.push('**Notes:** ' + i.notes.trim());
+  appendChatMsg('user', summaryLines.join('\n'));
+
+  // Build a context payload the model will see as the first user turn.
+  var contextBlob = [
+    '--- BLOCK INTAKE ---',
+    'block_type: '   + i.blockType,
+    'chart_type: '   + (i.chartType || 'none'),
+    'datasource_id: '+ (i.dsId || '(none yet)'),
+    'datasource_kind: ' + (i.dsKind || 'none'),
+    'datasource_name: ' + (i.dsName || ''),
+    'query_count_estimate: ' + i.queryCount,
+    'interaction_filters: '   + !!i.interactions.sendsFilters,
+    'interaction_clicks: '    + !!i.interactions.clickActions,
+    'interaction_drilldown: ' + !!i.interactions.drilldown,
+    'notes: ' + (i.notes || ''),
+    '--- END INTAKE ---'
+  ].join('\n');
+
+  // Seed an initial guidance message tailored to whether they have a DS yet.
+  var guidance;
+  if (!i.dsId) {
+    guidance = 'Got it. Since you don\'t have a data source picked yet, let\'s start there.\n\n' +
+      '1. **Credential first** \u2014 do you already have a database credential in the portal? If not, click **+ New credential** above. I can help you write the JDBC string if you tell me the DB type (postgres / mysql / mssql / snowflake / etc.) and host.\n' +
+      '2. **Datasource (or Query in 1.18)** \u2014 once a credential exists, I\'ll draft the SQL based on what you describe. We\'ll use Test Run to confirm columns before writing block code.\n' +
+      '3. **Block code** \u2014 I\'ll generate the HTML+JS+CSS using the columns we confirmed.\n\n' +
+      'What database type are you on, and what data do you want to chart?';
+  } else {
+    guidance = 'Got it. I have the intake. Next I\'ll:\n' +
+      '1. Inspect `' + i.dsName + '` (' + (i.dsKind || 'datasource') + ') and confirm the columns/data types.\n' +
+      (i.queryCount > 1 ? '2. Plan **' + i.queryCount + '** queries against it and write each one.\n' : '') +
+      (i.chartType ? '3. Build a **' + i.chartType + '** ' + (i.chartType === 'pie' || i.chartType === 'donut' || i.chartType === 'sankey' || i.chartType === 'treemap' ? 'chart' : 'chart on XYChart') + ' wired to the data.\n' : '') +
+      (i.interactions.sendsFilters ? '\u2022 Add a click handler that calls `zPortal.dataSource.setFilters` (1.17) or `zPortal.query.setFilter` (1.18).\n' : '') +
+      (i.interactions.clickActions ? '\u2022 Wire click \u2192 action (open URL / db_modification / etc).\n' : '') +
+      (i.interactions.drilldown    ? '\u2022 Register a reactive listener so the block re-renders when other filters change.\n' : '') +
+      '\nDo you want me to start with the SQL/columns, or jump straight to drafting the code?';
+  }
+
+  appendChatMsg('ai', guidance);
+  // Push as an artificial assistant turn so subsequent messages have context
+  chatHistory.push({ role: 'user',      content: 'Block intake answers:\n' + contextBlob });
+  chatHistory.push({ role: 'assistant', content: guidance });
+  // Stash intake for buildSystemPrompt to surface to the model on every send
+  window._intakeContext = contextBlob;
+
+  setTimeout(function() { ge('chat-input').focus(); }, 30);
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -1745,7 +1990,7 @@ function deleteBlock() {
 }
 
 // ── AI Chat ────────────────────────────────────────────────────────────────
-function clearChat() { chatHistory = []; ge('chat-messages').innerHTML = ''; }
+function clearChat() { chatHistory = []; window._intakeContext = null; ge('chat-messages').innerHTML = ''; }
 function chatKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }
 function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
 
@@ -1777,12 +2022,13 @@ function sendChat() {
     dataSection += '\n--- END DATASOURCE DATA ---';
   }
 
+  var intakeSection = window._intakeContext ? ('\n\n' + window._intakeContext) : '';
   var userMsgWithCtx = prompt +
     '\n\n--- CURRENT BLOCK CODE ---' +
     '\nBlock name: ' + blockName +
     '\n\n[HTML + JS]\n' + (currentHTML || '(empty)') +
     '\n\n[CSS]\n' + (currentCSS || '(empty)') +
-    '\n--- END CURRENT CODE ---' + dataSection;
+    '\n--- END CURRENT CODE ---' + dataSection + intakeSection;
 
   chatHistory.push({ role: 'user', content: prompt });
   var thinkId = appendThinking();
@@ -1829,6 +2075,50 @@ function buildSystemPrompt() {
   if (enabled.length) {
     base += '\n\n# CUSTOM RULES — ALWAYS FOLLOW THESE\n';
     base += enabled.map(function(r) { return '- ' + r.text; }).join('\n');
+  }
+  // Intake context (set by submitIntake)
+  if (window._intakeContext) {
+    base += '\n\n# CURRENT BLOCK INTAKE (already collected from the user)\n' + window._intakeContext;
+  }
+  // Tell the model how to surface a "go create this in the DS modal" CTA.
+  base += [
+    '',
+    '',
+    '# GUIDED FLOW — DATASOURCE / QUERY / CREDENTIAL CREATION',
+    'When the user needs to create a new credential, datasource, or query, you MAY emit a fenced',
+    '```dsmodal``` block whose body is JSON like {"kind":"credential|datasource|query","prefill":{...}}.',
+    'The Block Builder UI renders a button under that block that opens its DS modal pre-filled with',
+    'the suggested values. Use this whenever you propose specific values; do NOT use it for generic',
+    'mentions. Always also explain in plain English what the user is about to create and why.',
+    '',
+    'Examples of valid prefill payloads:',
+    '  credential: {"name":"Production Postgres","type":"postgresql","data":{"host":"db.example.com","port":5432,"database":"prod","user":"app","password":""}}',
+    '  datasource: {"name":"orders_by_state","sql":"SELECT state, COUNT(*) FROM orders GROUP BY state","credential_id":"<id-from-registry>"}',
+    '  query:      {"raw_sql":"SELECT state, COUNT(*) FROM main GROUP BY state","datasources":[{"id":"<ds-id>","alias":"main"}]}',
+    '',
+    'Always recommend the user click **Test Run** in the DS modal before saving, so column types are',
+    'confirmed before you write the block code.',
+    '',
+    '# JDBC / CONNECTION HELPERS',
+    'If the user is unsure about credential fields, ask their DB type (postgresql, mysql, mssql,',
+    'snowflake, redshift, etc.), then propose a JDBC URL or host/port/db split that fits.',
+    'Common defaults: postgresql 5432, mysql 3306, mssql 1433, redshift 5439, snowflake uses account+warehouse.',
+    '',
+    '# AVAILABLE PORTAL OBJECTS (from BB.registry, summarised)'
+  ].join('\n');
+  // Append a short registry summary so the model can reference real names.
+  var reg = (window.BB && window.BB.registry) || {};
+  function summarise(arr, fn) {
+    if (!arr || !arr.length) return '(none)';
+    return arr.slice(0, 25).map(fn).join('; ');
+  }
+  base += '\n- datasources: ' + summarise(reg.datasources, function(d) { return d.name + ' [' + (d.id || '').slice(0,8) + ']'; });
+  base += '\n- queries:     ' + summarise(reg.queries,     function(q) { return (q.name || (q.raw_sql || '').slice(0, 30) || q.id) + ' [' + (q.id || '').slice(0,8) + ']'; });
+  base += '\n- credentials: ' + summarise(reg.credentials, function(c) { return c.name + ' (' + (c.type || '?') + ') [' + (c.id || '').slice(0,8) + ']'; });
+  base += '\n- block types: ' + (reg.blockTypes || []).map(function(t){return t.value;}).join(', ');
+  base += '\n- chart types: ' + (reg.chartTypes || []).map(function(t){return t.value;}).join(', ');
+  if (window.blockDataContext && window.blockDataContext.columns) {
+    base += '\n- current block columns: ' + window.blockDataContext.columns.join(', ');
   }
   return base;
 }
@@ -1880,14 +2170,53 @@ function appendThinking() {
 function removeThinking(id) { var n = document.getElementById(id); if (n) n.parentNode.removeChild(n); }
 
 function formatMsg(text) {
-  var s = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Track dsmodal suggestions emitted by the model — they get rendered as
+  // CTA buttons instead of raw code fences. We use a placeholder that
+  // survives escaping/wrapping, then swap it back at the end.
+  var suggestions = [];
+  var withSuggest = String(text || '').replace(/```dsmodal[\s\S]*?\n([\s\S]*?)```/gi, function(_, body) {
+    var payload = null;
+    try { payload = JSON.parse(body.trim()); } catch (e) { /* fall back to raw */ }
+    if (!payload || !payload.kind) return '```\n' + body + '```';   // keep as code if unparsable
+    suggestions.push(payload);
+    return '\u2603DSMODAL_PLACEHOLDER_' + (suggestions.length - 1) + '\u2603';
+  });
+  var s = withSuggest.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, function(_, code) {
     return '<pre><code>' + code.replace(/\s+$/, '') + '</code></pre>';
   });
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.split('\n\n').map(function(p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+  // Swap placeholders back to suggestion CTAs
+  s = s.replace(/\u2603DSMODAL_PLACEHOLDER_(\d+)\u2603/g, function(_, idx) {
+    var sug = suggestions[Number(idx)];
+    if (!sug) return '';
+    var label = (sug.kind === 'credential') ? 'credential'
+              : (sug.kind === 'query')      ? 'query'
+              :                                'datasource';
+    var name  = (sug.prefill && sug.prefill.name) || '(unnamed)';
+    var json  = JSON.stringify(sug).replace(/"/g, '&quot;');
+    return '<div class="ds-suggest">' +
+             '<span class="ds-suggest-label">Suggested: new <strong>' + label + '</strong> \u201c' +
+               String(name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '\u201d' +
+             '</span>' +
+             '<button class="btn-suggest" data-sug="' + json + '" onclick="openDsModalFromSuggestion(this)">Open in DS modal \u2192</button>' +
+           '</div>';
+  });
   return s;
+}
+
+// Bridge from a chat suggestion CTA → BB.dsModal.openPrefilled
+function openDsModalFromSuggestion(btn) {
+  try {
+    var raw = btn.getAttribute('data-sug') || '';
+    var sug = JSON.parse(raw.replace(/&quot;/g, '"'));
+    if (!sug || !sug.kind) return;
+    BB.dsModal.openPrefilled(sug.kind, sug.prefill || {});
+  } catch (e) {
+    console.warn('openDsModalFromSuggestion failed:', e);
+  }
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────
@@ -2179,7 +2508,29 @@ function esc(str) {
   BB.detectedVersion = null;     // string from server: '1.17' | '1.18' | 'unknown'
   BB.rawVersion      = null;     // raw version string from /api/version
   BB.registry        = {         // shortcode registry
-    blocks: [], datasources: [], queries: [], credentials: [], columns: []
+    blocks: [], datasources: [], queries: [], credentials: [], columns: [],
+    // Static catalogues (no API call needed)
+    blockTypes: [
+      { value: 'html',          hint: 'Custom HTML+JS+CSS' },
+      { value: 'amchart',       hint: 'amCharts widget' },
+      { value: 'data-table',    hint: 'Tabular widget' },
+      { value: 'multiselect',   hint: 'Multi-select filter widget' },
+      { value: 'date-time',     hint: 'Date/time filter widget' }
+    ],
+    chartTypes: [
+      { value: 'xy',       hint: 'XYChart \u2014 line/bar/area combos' },
+      { value: 'line',     hint: 'Line series on XYChart' },
+      { value: 'column',   hint: 'Vertical bar series on XYChart' },
+      { value: 'bar',      hint: 'Horizontal bar series on XYChart' },
+      { value: 'pie',      hint: 'PieChart' },
+      { value: 'donut',    hint: 'PieChart with inner radius' },
+      { value: 'sankey',   hint: 'SankeyDiagram' },
+      { value: 'treemap',  hint: 'Treemap series on Hierarchy chart' },
+      { value: 'map',      hint: 'MapChart (geographic)' },
+      { value: 'radar',    hint: 'RadarChart' },
+      { value: 'scatter',  hint: 'XYChart with point series' },
+      { value: 'gauge',    hint: 'RadarChart configured as gauge' }
+    ]
   };
 
   // Effective version honours per-portal override
@@ -2271,6 +2622,14 @@ function esc(str) {
     });
     BB.registry.credentials.forEach(function(c) {
       out.push({ cat: 'Credential ID', icon: '\u26BF', label: c.name + ' (' + c.type + ')', value: c.id, hint: '' });
+    });
+    // Block types
+    (BB.registry.blockTypes || []).forEach(function(t) {
+      out.push({ cat: 'Block Type', icon: '\u25A3', label: t.value, value: t.value, hint: t.hint });
+    });
+    // amCharts chart types
+    (BB.registry.chartTypes || []).forEach(function(t) {
+      out.push({ cat: 'Chart Type', icon: '\u2756', label: t.value, value: t.value, hint: t.hint });
     });
     // Columns of the active block's first datasource
     if (window.blockDataContext && window.blockDataContext.columns) {
@@ -2915,6 +3274,48 @@ function esc(str) {
     DS.state.item = null;
     DS.renderLists();
     DS.renderForm();
+  };
+
+  // ── Open the modal pre-filled (used by AI suggestions / intake "+ New") ──
+  // prefill shape varies by kind:
+  //   datasource: { name, sql, credential_id }
+  //   query:      { name, raw_sql, datasources:[{id,alias}] }
+  //   credential: { name, type, data:{...}, tags:[] }
+  DS.openPrefilled = function(kind, prefill) {
+    prefill = prefill || {};
+    // Open the modal first; refreshLists is async so prefill rendering needs
+    // to happen after lists return (so credential/datasource <select>s are populated).
+    document.getElementById('ds-overlay').classList.add('open');
+    BB.updateDsTabs();
+    DS.refreshLists().then(function() {
+      DS.state.kind = kind;
+      DS.state.id   = null;
+      // Stash a synthesised "item" so the form renders with the prefill values
+      if (kind === 'datasource') {
+        DS.state.item = {
+          name: prefill.name || '',
+          sql:  prefill.sql  || '',
+          database_connection: prefill.credential_id
+            ? { type: 'stored', id: prefill.credential_id }
+            : { type: 'stored', id: '' }
+        };
+      } else if (kind === 'query') {
+        DS.state.item = {
+          name:        prefill.name    || '',
+          raw_sql:     prefill.raw_sql || prefill.sql || '',
+          datasources: prefill.datasources || []
+        };
+      } else if (kind === 'credential') {
+        DS.state.item = {
+          name: prefill.name || '',
+          type: prefill.type || '',
+          data: prefill.data || {},
+          tags: prefill.tags || []
+        };
+      }
+      DS.renderLists();
+      DS.renderForm();
+    });
   };
 
   // ── Render the right pane based on current state ─────────────────────────
