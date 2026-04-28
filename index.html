@@ -661,6 +661,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
     <div class="stab-bar">
       <button class="stab active" onclick="switchSettingsTab('portals')">&#127760; Portals</button>
       <button class="stab"        onclick="switchSettingsTab('github')">&#9645; GitHub</button>
+      <button class="stab"        onclick="switchSettingsTab('anthropic')">&#10022; Anthropic</button>
       <button class="stab"        onclick="switchSettingsTab('skills')">&#9889; Skills</button>
       <button class="stab"        onclick="switchSettingsTab('rules')">&#10022; AI Rules</button>
     </div>
@@ -695,6 +696,33 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
       </div>
     </div>
 
+    <!-- Anthropic tab -->
+    <div class="stab-panel" id="stab-anthropic">
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:520px">
+        <div class="form-group">
+          <label>API Key</label>
+          <input id="cfg-anthropic-key" type="password" placeholder="sk-ant-api03-..." autocomplete="off"/>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
+            Generate at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--primary)">console.anthropic.com/settings/keys</a>.
+            Anthropic auto-revokes keys that appear in committed code or third-party logs &mdash; rotate if you ever paste one publicly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="cfg-anthropic-model" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui)">
+            <option value="claude-opus-4-6">claude-opus-4-6 (smartest, slower, costlier)</option>
+            <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6 (balanced &mdash; recommended)</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest, cheapest)</option>
+          </select>
+        </div>
+        <div id="anthropic-test-status" style="font-size:12px;min-height:16px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="testAnthropic()">Test Connection</button>
+          <button class="btn btn-primary" onclick="saveAnthropicSettings()">Save Anthropic</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Portals tab -->
     <div class="stab-panel active" id="stab-portals">
       <div id="portals-layout">
@@ -708,7 +736,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
           <div class="form-group"><label>Portal URL</label><input id="cfg-portal-url" type="text" placeholder="https://your-portal.zuarbase.net"/></div>
           <div class="form-group"><label>API Key</label><input id="cfg-api-key" type="password" placeholder="Portal API key"/></div>
           <div class="form-group"><label>User ID</label><input id="cfg-user-id" type="text" placeholder="Your portal user ID"/></div>
-          <div class="form-group"><label>Anthropic API Key</label><input id="cfg-anthropic-key" type="password" placeholder="sk-ant-..."/></div>
           <div class="portal-form-row">
             <div class="form-group compact">
               <label>Portal Version</label>
@@ -1450,6 +1477,18 @@ function loadSavedConfig() {
     var cfg = d.config || d;
     savedPortals    = (cfg.portals && cfg.portals.length) ? cfg.portals : [];
     activePortalIdx = (cfg.active_portal != null) ? cfg.active_portal : -1;
+    // ── One-time migration: lift per-portal anthropic_key into global cfg.anthropic.apiKey
+    var globalAnthKey = (cfg.anthropic && cfg.anthropic.apiKey) || cfg.anthropic_key || '';
+    if (!globalAnthKey) {
+      var firstWithKey = savedPortals.filter(function(p) { return p && p.anthropic_key; })[0];
+      if (firstWithKey) {
+        var lifted = firstWithKey.anthropic_key;
+        cfg.anthropic = Object.assign({}, cfg.anthropic || {}, { apiKey: lifted });
+        cfg.anthropic_key = lifted;
+        // Persist the migration so future loads don't have to redo it
+        fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) }).catch(function(){});
+      }
+    }
     renderPortalList();
     if (activePortalIdx >= 0 && savedPortals[activePortalIdx]) {
       loadPortalForm(activePortalIdx);
@@ -2378,13 +2417,97 @@ function closeSettings() {
   ge('btn-back-from-settings').style.display = 'none';
 }
 function switchSettingsTab(tab) {
-  var tabs  = ['portals', 'github', 'skills', 'rules'];
+  // Tabs in DOM order matching the .stab buttons
+  var tabs  = ['portals', 'github', 'anthropic', 'skills', 'rules'];
   var stabs = document.querySelectorAll('.stab');
   tabs.forEach(function(t, i) {
     var panel = ge('stab-' + t);
     if (panel) panel.classList.toggle('active', t === tab);
     if (stabs[i]) stabs[i].classList.toggle('active', t === tab);
   });
+  if (tab === 'anthropic' && typeof loadAnthropicSettings === 'function') loadAnthropicSettings();
+}
+
+// ── Anthropic settings tab ─────────────────────────────────────────────────
+function loadAnthropicSettings() {
+  fetch('/api/config').then(function(r) { return r.json(); }).then(function(d) {
+    var cfg = d.config || d;
+    var a   = cfg.anthropic || {};
+    var key = a.apiKey || cfg.anthropic_key || '';
+    var mdl = a.model  || 'claude-sonnet-4-6';
+    ge('cfg-anthropic-key').value = key;
+    var sel = ge('cfg-anthropic-model');
+    // If the saved model isn't one of the dropdown options, add it as a custom option
+    var found = false;
+    Array.from(sel.options).forEach(function(o) { if (o.value === mdl) { o.selected = true; found = true; } });
+    if (!found && mdl) {
+      var opt = document.createElement('option');
+      opt.value = mdl; opt.textContent = mdl + ' (custom)'; opt.selected = true;
+      sel.appendChild(opt);
+    }
+    setAnthropicStatus('', '');
+  });
+}
+
+function setAnthropicStatus(msg, type) {
+  var el = ge('anthropic-test-status'); if (!el) return;
+  el.textContent = msg;
+  el.style.color = type === 'ok' ? 'var(--green)' : type === 'err' ? 'var(--red)' : 'var(--text-dim)';
+}
+
+function saveAnthropicSettings() {
+  var key   = ge('cfg-anthropic-key').value.trim();
+  var model = ge('cfg-anthropic-model').value;
+  if (!key) { setAnthropicStatus('API key is required.', 'err'); return; }
+  setAnthropicStatus('Saving\u2026', 'info');
+  fetch('/api/config').then(function(r) { return r.json(); }).then(function(d) {
+    var cfg = d.config || d;
+    cfg.anthropic = Object.assign({}, cfg.anthropic || {}, { apiKey: key, model: model });
+    cfg.anthropic_key = key;   // legacy field, kept in sync
+    return fetch('/api/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg)
+    });
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.ok) setAnthropicStatus('\u2713 Saved.', 'ok');
+    else           setAnthropicStatus('Save failed: ' + (d.error || 'unknown'), 'err');
+  }).catch(function(e) { setAnthropicStatus('Save error: ' + e.message, 'err'); });
+}
+
+function testAnthropic() {
+  var key   = ge('cfg-anthropic-key').value.trim();
+  var model = ge('cfg-anthropic-model').value;
+  if (!key) { setAnthropicStatus('API key is required.', 'err'); return; }
+  setAnthropicStatus('Testing\u2026', 'info');
+  // Save first so the server-side route uses the key the user just typed
+  saveAnthropicSettingsThen(function() {
+    fetch('/api/anthropic', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        max_tokens: 16,
+        messages: [{ role: 'user', content: 'reply with the single word OK' }]
+      })
+    }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
+      .then(function(res) {
+        if (res.ok)         setAnthropicStatus('\u2713 Connected. Model responded successfully.', 'ok');
+        else if (res.status === 401) setAnthropicStatus('\u2717 401 invalid API key \u2014 generate a new one at console.anthropic.com.', 'err');
+        else                setAnthropicStatus('\u2717 ' + res.status + ' \u2014 ' + ((res.data.error && res.data.error.message) || JSON.stringify(res.data).slice(0, 200)), 'err');
+      })
+      .catch(function(e) { setAnthropicStatus('Network error: ' + e.message, 'err'); });
+  });
+}
+
+// Helper: save then run cb (used by Test Connection so the test hits the latest key)
+function saveAnthropicSettingsThen(cb) {
+  var key   = ge('cfg-anthropic-key').value.trim();
+  var model = ge('cfg-anthropic-model').value;
+  fetch('/api/config').then(function(r) { return r.json(); }).then(function(d) {
+    var cfg = d.config || d;
+    cfg.anthropic = Object.assign({}, cfg.anthropic || {}, { apiKey: key, model: model });
+    cfg.anthropic_key = key;
+    return fetch('/api/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg)
+    });
+  }).then(function() { cb(); }).catch(function() { cb(); });
 }
 
 // ── Portals tab ────────────────────────────────────────────────────────────
@@ -2420,7 +2543,6 @@ function loadPortalForm(idx) {
   ge('cfg-portal-url').value    = p.portal_url    || '';
   ge('cfg-api-key').value       = p.api_key        || '';
   ge('cfg-user-id').value       = p.user_id        || '';
-  ge('cfg-anthropic-key').value = p.anthropic_key  || '';
   setPortalFormMsg('');
 }
 
@@ -2429,7 +2551,6 @@ function addNewPortal() {
   ge('cfg-portal-url').value    = '';
   ge('cfg-api-key').value       = '';
   ge('cfg-user-id').value       = '';
-  ge('cfg-anthropic-key').value = '';
   setPortalFormMsg('');
   ge('cfg-portal-url').focus();
 }
@@ -2448,9 +2569,10 @@ function savePortalForm() {
   var url    = ge('cfg-portal-url').value.trim();
   var apiKey = ge('cfg-api-key').value.trim();
   var userId = ge('cfg-user-id').value.trim();
-  var aKey   = ge('cfg-anthropic-key').value.trim();
   if (!url || !apiKey || !userId) { setPortalFormMsg('URL, API key, and User ID are required.', 'err'); return; }
-  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: aKey };
+  // Preserve any legacy anthropic_key on the existing entry (read-only here now)
+  var existing = (editingPortalIdx >= 0 && savedPortals[editingPortalIdx]) || {};
+  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: existing.anthropic_key || '' };
   if (editingPortalIdx >= 0) {
     savedPortals[editingPortalIdx] = entry;
   } else {
@@ -2468,9 +2590,9 @@ function connectSelectedPortal() {
   var url    = ge('cfg-portal-url').value.trim();
   var apiKey = ge('cfg-api-key').value.trim();
   var userId = ge('cfg-user-id').value.trim();
-  var aKey   = ge('cfg-anthropic-key').value.trim();
   if (!url || !apiKey || !userId) { setPortalFormMsg('URL, API key, and User ID are required.', 'err'); return; }
-  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: aKey };
+  var existing = (editingPortalIdx >= 0 && savedPortals[editingPortalIdx]) || {};
+  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: existing.anthropic_key || '' };
   if (editingPortalIdx >= 0) {
     savedPortals[editingPortalIdx] = entry;
     activePortalIdx = editingPortalIdx;
