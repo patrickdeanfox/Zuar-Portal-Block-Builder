@@ -1,0 +1,48 @@
+# ── Secrets — NEVER commit ────────────────────────────────────────────────
+config.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Node ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.yarn-integrity
+
+# ── Logs / runtime ────────────────────────────────────────────────────────
+*.log
+logs/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editors / IDEs ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# ── Build / coverage ──────────────────────────────────────────────────────
+dist/
+build/
+coverage/
+.nyc_output/
+
+# ── Misc ──────────────────────────────────────────────────────────────────
+*.tmp
+*.bak
+.cache/

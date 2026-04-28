@@ -1,0 +1,3409 @@
+
+<!-- Floating Button -->
+<button class="tfm-float-btn" id="tfmFloatBtn" title="Views" style="display:none">
+  <i class="fa-solid fa-filter"></i>
+  <span class="tfm-float-label"></span>
+</button>
+
+<!-- Modal -->
+<div class="tfm-modal-overlay" id="tfmModalOverlay">
+  <div class="tfm-modal">
+    <!-- Header -->
+    <div class="tfm-modal-header">
+      <h2 class="tfm-modal-title">Custom View Manager</h2>
+      <button class="tfm-close-btn" id="tfmCloseBtn"><i class="fa-solid fa-x"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tfm-tabs">
+      <button class="tfm-tab active" data-tab="save">Save Current View</button>
+      <button class="tfm-tab" data-tab="saved">Saved Views</button>
+    </div>
+
+    <!-- Inline Notification (inside modal) -->
+    <div class="tfm-modal-notification" id="tfmModalNotification">
+      <i id="tfmModalNotificationIcon" class="fa-solid fa-check"></i>
+      <div>
+        <span class="tfm-modal-notification-title" id="tfmModalNotificationTitle"></span>
+        <span class="tfm-modal-notification-message" id="tfmModalNotificationMessage"></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="tfm-modal-body">
+      <!-- Save Tab -->
+      <div class="tfm-tab-content active" id="tfmSaveTab">
+        <div class="tfm-form-group">
+          <label class="tfm-label" for="tfmStateName">Custom View Name</label>
+          <input
+            type="text"
+            class="tfm-input"
+            id="tfmStateName"
+            placeholder="Enter a name for this custom view..."
+          >
+        </div>
+
+        <!-- Preview Section -->
+        <div class="tfm-preview" id="tfmPreview">
+          <div class="tfm-preview-title">Changes from Initial Dashboard State</div>
+          <div class="tfm-loading active">
+            <div class="tfm-spinner"></div>
+            <div class="tfm-loading-text">Comparing against initial state...</div>
+          </div>
+          <div id="tfmPreviewContent"></div>
+        </div>
+
+        <button class="tfm-btn tfm-btn-primary" id="tfmSaveBtn" disabled>
+          <i class="fa-solid fa-floppy-disk"></i> Save View
+        </button>
+      </div>
+
+      <!-- Saved States Tab -->
+      <div class="tfm-tab-content" id="tfmSavedTab">
+        <div class="tfm-loading" id="tfmSavedLoading">
+          <div class="tfm-spinner"></div>
+          <div class="tfm-loading-text">Loading saved states...</div>
+        </div>
+        <div class="tfm-states-list" id="tfmStatesList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="tfm-notification" id="tfmNotification">
+  <div class="tfm-notification-icon"><i class="fa-solid fa-check"></i></div>
+  <div class="tfm-notification-content">
+    <div class="tfm-notification-title" id="tfmNotificationTitle">Success</div>
+    <div class="tfm-notification-message" id="tfmNotificationMessage">Operation completed</div>
+    <div class="tfm-notification-progress" id="tfmNotificationProgress">
+      <div class="tfm-notification-progress-bar" id="tfmNotificationProgressBar"></div>
+    </div>
+    <div class="tfm-notification-details" id="tfmNotificationDetails"></div>
+  </div>
+</div>
+
+<script>
+// ====
+// CONFIGURATION
+// ====
+const CONFIG = {
+  // Tableau Viz IDs resolved dynamically from zPortal.page.blocks (type: "tableau-v3")
+  VIZ_IDS: [],
+  VIZ_ID: null, // active viz id (set at runtime)
+
+  // Retry settings for viz loading
+  MAX_RETRIES: 3,
+  RETRY_DELAY_MS: 1000,
+
+  // Timeout for waiting for viz to be interactive
+  INTERACTIVE_TIMEOUT_MS: 30000,
+
+  // Enable/disable auto-restore on page load
+  AUTO_RESTORE_ON_LOAD: false,
+
+  // Logging levels: 'debug', 'info', 'warn', 'error', 'none'
+  LOG_LEVEL: 'info',
+
+  // Apply only filters/params that differ from current state
+  APPLY_ONLY_DIFFERENCES: true,
+
+  // === API SETTINGS ===
+  // Set to your DB modifications endpoint URL, e.g. 'https://your-api.com/db/modifications'
+  API_ENDPOINT: 'https://ignite.e15group.com/api/db_modifications/run?ignore_access_policies_for_admin=true',
+
+  // === PERFORMANCE OPTIMIZATION SETTINGS ===
+
+  // Debug mode: enables detailed performance timing logs
+  DEBUG_MODE: true,
+
+  // Batch size for parallel operations
+  BATCH_SIZE: 5,
+
+  // Delay between batches in milliseconds
+  BATCH_DELAY_MS: 50,
+
+  // Enable progress UI during restoration
+  SHOW_PROGRESS_UI: true,
+
+  // ====
+  // UI HIDDEN FILTERS / PARAMETERS
+  // Names listed here are still captured, saved, and restored normally.
+  // They are only hidden from the preview and saved-state cards in the UI.
+  // Matching is case-insensitive.
+  // ====
+  UI_HIDDEN_FILTERS: [
+    'Filter Boxes Parameter',
+    // 'Category',
+  ],
+  UI_HIDDEN_PARAMETERS: [
+    'Filter Boxes Parameter',
+    // 'Selected Metric',
+  ]
+};
+
+// ====
+// PERFORMANCE TRACKER (for debug mode)
+// ====
+const PerfTracker = {
+  timings: {},
+  enabled: () => CONFIG.DEBUG_MODE,
+
+  start(label) {
+    if (!this.enabled()) return;
+    this.timings[label] = { start: performance.now(), end: null };
+    console.log(`[PERF] ⏱️ START: ${label}`);
+  },
+
+  end(label) {
+    if (!this.enabled() || !this.timings[label]) return 0;
+    this.timings[label].end = performance.now();
+    const duration = this.timings[label].end - this.timings[label].start;
+    console.log(`[PERF] ⏱️ END: ${label} - ${duration.toFixed(2)}ms`);
+    return duration;
+  },
+
+  mark(label, message) {
+    if (!this.enabled()) return;
+    console.log(`[PERF] 📍 ${label}: ${message} @ ${performance.now().toFixed(2)}ms`);
+  },
+
+  summary() {
+    if (!this.enabled()) return;
+    console.log('\n[PERF] ==== PERFORMANCE SUMMARY ====');
+    let total = 0;
+    for (const [label, timing] of Object.entries(this.timings)) {
+      if (timing.end) {
+        const duration = timing.end - timing.start;
+        total += duration;
+        console.log(`[PERF]   ${label}: ${duration.toFixed(2)}ms`);
+      }
+    }
+    console.log(`[PERF] ==== TOTAL: ${total.toFixed(2)}ms ====\n`);
+  },
+
+  reset() {
+    this.timings = {};
+  }
+};
+
+// Global debug toggle function
+window.TFM_DEBUG = function(enable) {
+  CONFIG.DEBUG_MODE = !!enable;
+  console.log(`[TFM] Debug mode ${enable ? 'ENABLED' : 'DISABLED'}`);
+  return CONFIG.DEBUG_MODE;
+};
+
+// ====
+// LOGGING UTILITY
+// ====
+const Logger = {
+  levels: { debug: 0, info: 1, warn: 2, error: 3, none: 4 },
+
+  currentLevel() {
+    return this.levels[CONFIG.LOG_LEVEL] || this.levels.info;
+  },
+
+  debug(...args) {
+    if (this.currentLevel() <= this.levels.debug) {
+      console.log('[TABLEAU-FILTER-MGR][DEBUG]', ...args);
+    }
+  },
+
+  info(...args) {
+    if (this.currentLevel() <= this.levels.info) {
+      console.log('[TABLEAU-FILTER-MGR][INFO]', ...args);
+    }
+  },
+
+  warn(...args) {
+    if (this.currentLevel() <= this.levels.warn) {
+      console.warn('[TABLEAU-FILTER-MGR][WARN]', ...args);
+    }
+  },
+
+  error(...args) {
+    if (this.currentLevel() <= this.levels.error) {
+      console.error('[TABLEAU-FILTER-MGR][ERROR]', ...args);
+    }
+  },
+
+  separator() {
+    if (this.currentLevel() <= this.levels.info) {
+      console.log('='.repeat(80));
+    }
+  },
+
+  perf(...args) {
+    if (CONFIG.DEBUG_MODE) {
+      console.log('[TABLEAU-FILTER-MGR][PERF]', ...args);
+    }
+  }
+};
+
+// ====
+// PROGRESS TRACKER
+// ====
+const ProgressTracker = {
+  total: 0,
+  current: 0,
+  status: '',
+  callbacks: [],
+
+  init(total, status = 'Initializing...') {
+    this.total = total;
+    this.current = 0;
+    this.status = status;
+    this.notify();
+  },
+
+  update(current, status) {
+    this.current = current;
+    if (status) this.status = status;
+    this.notify();
+  },
+
+  increment(status) {
+    this.current++;
+    if (status) this.status = status;
+    this.notify();
+  },
+
+  getPercentage() {
+    if (this.total === 0) return 0;
+    return Math.round((this.current / this.total) * 100);
+  },
+
+  onProgress(callback) {
+    this.callbacks.push(callback);
+  },
+
+  notify() {
+    const data = {
+      current: this.current,
+      total: this.total,
+      percentage: this.getPercentage(),
+      status: this.status
+    };
+    this.callbacks.forEach(cb => cb(data));
+  },
+
+  reset() {
+    this.total = 0;
+    this.current = 0;
+    this.status = '';
+    this.callbacks = [];
+  }
+};
+
+// ====
+// ZPORTAL UTILITY
+// ====
+const ZPortalUtil = {
+  getUserInfo() {
+    try {
+      if (window.zPortal && window.zPortal.user) {
+        const user = window.zPortal.user;
+        return {
+          id: user.id || null,
+          username: user.username || null,
+          fullname: user.fullname || null,
+          email: user.email || null,
+          is_admin: user.is_admin || false,
+          groups: user.groups || [],
+          source: user.source || null
+        };
+      }
+      Logger.warn('zPortal.user not available');
+      return null;
+    } catch (error) {
+      Logger.error('Failed to get user info:', error);
+      return null;
+    }
+  },
+
+  getPageInfo() {
+    try {
+      if (window.zPortal && window.zPortal.page) {
+        const page = window.zPortal.page;
+        return {
+          id: page.id || null,
+          name: page.name || null,
+          slug: page.slug || null,
+          order: page.order || null,
+          tags: page.tags || [],
+          created_at: page.created_at || null,
+          updated_at: page.updated_at || null
+        };
+      }
+      Logger.warn('zPortal.page not available');
+      return null;
+    } catch (error) {
+      Logger.error('Failed to get page info:', error);
+      return null;
+    }
+  },
+
+  getTableauVizBlocks() {
+    try {
+      const gridBlocks = window.zPortal?.page?.data?.grid?.blocks || null;
+      const directBlocks = window.zPortal?.page?.blocks || null;
+      const blocks = Array.isArray(gridBlocks) ? gridBlocks : (Array.isArray(directBlocks) ? directBlocks : []);
+
+      if (!blocks || blocks.length === 0) {
+        Logger.warn('No blocks found on page');
+        return [];
+      }
+
+      const tableauBlocks = blocks.filter(b => (b?.type || '').toLowerCase() === 'tableau-v3');
+      Logger.debug(`zPortal blocks count: ${blocks.length} | tableau-v3 blocks: ${tableauBlocks.length}`);
+      return tableauBlocks;
+    } catch (error) {
+      Logger.error('Failed to get tableau blocks:', error);
+      return [];
+    }
+  },
+
+  getTableauVizIds() {
+    const blocks = this.getTableauVizBlocks();
+    const ids = blocks
+      .map(b => b?.id)
+      .filter(Boolean)
+      .map(id => `content-1-${id}`);
+    Logger.info(`Resolved ${ids.length} viz id(s) from page blocks`);
+    return ids;
+  },
+
+  initializeVizConfig() {
+    const ids = this.getTableauVizIds();
+    if (ids.length > 0) {
+      CONFIG.VIZ_IDS = ids;
+      CONFIG.VIZ_ID = ids[0];
+      Logger.info(`Active viz set from page blocks: ${CONFIG.VIZ_ID}`);
+      return CONFIG.VIZ_ID;
+    }
+
+    const pageId = window.zPortal?.page?.id;
+    const pageName = window.zPortal?.page?.name;
+    const msg = `No tableau-v3 blocks found; cannot set Tableau viz id. Page id: ${pageId || 'n/a'}, name: ${pageName || 'n/a'}`;
+    Logger.error(msg);
+    throw new Error(msg);
+  }
+};
+
+// ====
+// API STORE
+// Sends filter state save/delete operations to the configured API endpoint.
+// Filters and parameters are serialised as JSON objects so they can be stored
+// in SQL JSON/JSONB columns regardless of how many fields each state contains.
+// ====
+const ApiStore = {
+  _deletedStateNames: new Set(),
+  _savedStateRows: [],
+  _cachedBlockRows: null,    // snapshot of currentBlock.data taken at init
+  _cachedBlockCols: [],      // snapshot of currentBlock.columns taken at init
+  // undefined = not touched this session (fall back to currentBlock.data)
+  // null      = explicitly cleared this session
+  // string    = explicitly set this session
+  _localDefaultStateName: undefined,
+
+  /**
+   * Call once at init time while currentBlock is still in scope and populated.
+   * Stores a plain-array copy of the Proxy so we can read it later on demand.
+   */
+  cacheBlockData() {
+    try {
+      var block = (typeof currentBlock !== 'undefined') ? currentBlock : window.currentBlock;
+      console.log('[TFM][cacheBlockData] block available:', !!block);
+      if (!block) return;
+      var cols = block.columns || [];
+      var rows = block.data;
+      console.log('[TFM][cacheBlockData] columns:', cols.length, cols);
+      console.log('[TFM][cacheBlockData] row count:', rows ? rows.length : 'no data property');
+      if (!rows || rows.length === 0) {
+        console.warn('[TFM][cacheBlockData] data is empty at init — cache not set');
+        return;
+      }
+      this._cachedBlockCols = Array.from(cols);
+      this._cachedBlockRows = Array.from(rows);
+      console.log('[TFM][cacheBlockData] cached', this._cachedBlockRows.length, 'rows');
+    } catch (e) {
+      console.error('[TFM][cacheBlockData] ERROR:', e);
+    }
+  },
+
+  _generateStateId() {
+    const ts  = Date.now().toString(36);
+    const rnd = Math.random().toString(36).substring(2, 8);
+    return `tfm_${ts}_${rnd}`;
+  },
+
+  _getTimestamp() {
+    return new Date().toISOString().replace('T', ' ').substring(0, 19);
+  },
+
+  _buildRequestBody(modificationName, params) {
+    return {
+      db_modifications: [
+        {
+          name: modificationName,
+          params: params
+        }
+      ],
+      autocommit: true,
+      ignore_sql_errors: false
+    };
+  },
+
+  async _handleResponse(response) {
+    const text = await response.text();
+    let data = null;
+    if (text) { try { data = JSON.parse(text); } catch (_) {} }
+
+    if (!response.ok) {
+      let msg = `HTTP ${response.status} ${response.statusText}`;
+      if (text) {
+        try {
+          const j = JSON.parse(text);
+          const detail = j?.detail;
+          const modErr = j?.[0]?.results?.[0]?.error;
+          if (Array.isArray(detail) && detail[0]?.msg) msg = detail[0].msg;
+          else if (typeof detail === 'string')          msg = detail;
+          else if (modErr)                              msg = modErr;
+          else if (j?.message)                          msg = j.message;
+          else if (j?.error)                            msg = j.error;
+          else                                          msg = text.substring(0, 200);
+        } catch (_) { msg = text.substring(0, 200); }
+      }
+      throw new Error(`API error: ${msg}`);
+    }
+
+    const firstResult = data?.[0]?.results?.[0];
+    if (firstResult?.error) throw new Error(`API operation failed: ${firstResult.error}`);
+    return data;
+  },
+
+  async saveState(stateName, diffSnapshot) {
+    const endpoint = CONFIG.API_ENDPOINT;
+    if (!endpoint) {
+      Logger.warn('[ApiStore] CONFIG.API_ENDPOINT not set – skipping DB save');
+      return { success: false, error: 'API_ENDPOINT not configured' };
+    }
+
+    const stateId = this._generateStateId();
+
+    const params = {
+      state_id:        stateId,
+      state_name:      stateName,
+      page_url:        diffSnapshot.metadata?.pageUrl    || window.location.href,
+      user_id:         window.zPortal?.user?.id         || '',
+      user_email:      window.zPortal?.user?.email      || '',
+      user_name:       window.zPortal?.user?.fullname   || '',
+      captured_at:     diffSnapshot.metadata?.capturedAt || this._getTimestamp(),
+      filters:         JSON.stringify(diffSnapshot.filters     || {}),
+      parameters:      JSON.stringify(diffSnapshot.parameters  || {}),
+      filter_count:    diffSnapshot.metadata?.filterChangeCount    ?? 0,
+      parameter_count: diffSnapshot.metadata?.parameterChangeCount ?? 0,
+      _timestamp:      this._getTimestamp()
+    };
+
+    const payload = this._buildRequestBody('SAVE_FILTER_STATE', params);
+
+    try {
+      Logger.info(`[ApiStore] Saving state "${stateName}" to DB…`);
+      const response = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+      await this._handleResponse(response);
+      // Remove any prior local copy of this name (re-save/overwrite), then add fresh row
+      this._savedStateRows = this._savedStateRows.filter(r => r.state_name !== stateName);
+      this._deletedStateNames.delete(stateName);
+      this._savedStateRows.push({
+        state_id:        stateId,
+        state_name:      stateName,
+        page_url:        params.page_url,
+        user_id:         params.user_id,
+        user_email:      params.user_email,
+        user_name:       params.user_name,
+        captured_at:     params.captured_at,
+        filters:         params.filters,
+        parameters:      params.parameters,
+        filter_count:    params.filter_count,
+        parameter_count: params.parameter_count,
+        state_ind:       'active'
+      });
+      Logger.info(`[ApiStore] State "${stateName}" saved to DB (id: ${stateId})`);
+      return { success: true, stateId };
+    } catch (error) {
+      Logger.error('[ApiStore] Failed to save state to DB:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async setDefault(stateName, pageUrl) {
+    const endpoint = CONFIG.API_ENDPOINT;
+    if (!endpoint) {
+      Logger.warn('[ApiStore] CONFIG.API_ENDPOINT not set – skipping DB set default');
+      return { success: false, error: 'API_ENDPOINT not configured' };
+    }
+
+    const params = {
+      state_name:  stateName,
+      page_url:    pageUrl,
+      _timestamp:  this._getTimestamp()
+    };
+
+    const payload = this._buildRequestBody('SET_DEFAULT_FILTER_STATE', params);
+
+    try {
+      Logger.info(`[ApiStore] Setting default state "${stateName}" in DB…`);
+      const response = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+      await this._handleResponse(response);
+      this._localDefaultStateName = stateName;
+      Logger.info(`[ApiStore] Default state set to "${stateName}" in DB`);
+      return { success: true };
+    } catch (error) {
+      Logger.error('[ApiStore] Failed to set default state in DB:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async clearDefault(pageUrl) {
+    const endpoint = CONFIG.API_ENDPOINT;
+    if (!endpoint) {
+      Logger.warn('[ApiStore] CONFIG.API_ENDPOINT not set – skipping DB clear default');
+      return { success: false, error: 'API_ENDPOINT not configured' };
+    }
+
+    const params = {
+      page_url:   pageUrl,
+      _timestamp: this._getTimestamp()
+    };
+
+    const payload = this._buildRequestBody('REMOVE_DEFAULT_FILTER_STATE', params);
+
+    try {
+      Logger.info(`[ApiStore] Clearing default state for page in DB…`);
+      const response = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+      await this._handleResponse(response);
+      this._localDefaultStateName = null;
+      Logger.info(`[ApiStore] Default state cleared in DB`);
+      return { success: true };
+    } catch (error) {
+      Logger.error('[ApiStore] Failed to clear default state in DB:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async deleteState(stateName) {
+    const endpoint = CONFIG.API_ENDPOINT;
+    if (!endpoint) {
+      Logger.warn('[ApiStore] CONFIG.API_ENDPOINT not set – skipping DB delete');
+      return { success: false, error: 'API_ENDPOINT not configured' };
+    }
+
+    const params = {
+      state_name:  stateName,
+      page_url:    window.location.href,
+      _timestamp:  this._getTimestamp()
+    };
+
+    const payload = this._buildRequestBody('DELETE_FILTER_STATE', params);
+
+    try {
+      Logger.info(`[ApiStore] Deleting state "${stateName}" from DB…`);
+      const response = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+      await this._handleResponse(response);
+      this._deletedStateNames.add(stateName);
+      this._savedStateRows = this._savedStateRows.filter(r => r.state_name !== stateName);
+      Logger.info(`[ApiStore] State "${stateName}" deleted from DB`);
+      return { success: true };
+    } catch (error) {
+      Logger.error('[ApiStore] Failed to delete state from DB:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  _parseJson(val) {
+    if (val === null || val === undefined) return {};
+    if (typeof val === 'object') return val;
+    try { return JSON.parse(val); } catch (_) { return {}; }
+  },
+
+  _rowToSnapshot(row) {
+    const filters    = this._parseJson(row.filters);
+    const parameters = this._parseJson(row.parameters);
+    return {
+      filters,
+      parameters,
+      metadata: {
+        capturedAt:            row.captured_at    || null,
+        pageUrl:               row.page_url       || null,
+        isDiffSnapshot:        true,
+        filterChangeCount:     row.filter_count   || 0,
+        parameterChangeCount:  row.parameter_count || 0,
+        totalChangeCount:      (row.filter_count || 0) + (row.parameter_count || 0),
+        changedFilterNames:    Object.keys(filters),
+        changedParameterNames: Object.keys(parameters)
+      }
+    };
+  },
+
+  _getBlockData() {
+    try {
+      var block = (typeof currentBlock !== 'undefined') ? currentBlock : window.currentBlock;
+
+      console.log('[TFM][_getBlockData] currentBlock available:', typeof currentBlock !== 'undefined');
+
+      // Prefer live data; fall back to init-time cache if live data is empty
+      var cols, rows;
+      if (block && block.data && block.data.length > 0) {
+        cols = block.columns || [];
+        rows = block.data;
+        console.log('[TFM][_getBlockData] source: live currentBlock.data (' + rows.length + ' rows)');
+      } else if (this._cachedBlockRows && this._cachedBlockRows.length > 0) {
+        cols = this._cachedBlockCols;
+        rows = this._cachedBlockRows;
+        console.log('[TFM][_getBlockData] source: init-time cache (' + rows.length + ' rows) — live data was empty');
+      } else {
+        console.warn('[TFM][_getBlockData] No block data (live or cached) — returning local saves only (' + this._savedStateRows.length + ' rows)');
+        return this._savedStateRows.slice();
+      }
+
+      console.log('[TFM][_getBlockData] columns (' + cols.length + '):', cols);
+      console.log('[TFM][_getBlockData] raw rows (' + rows.length + '):', rows);
+
+      var result = [];
+      // Determine if data is array-of-arrays (needs columns) or array-of-objects
+      var isArrayRows = rows.length > 0 && Array.isArray(rows[0]);
+      console.log('[TFM][_getBlockData] row format:', isArrayRows ? 'array-of-arrays' : 'array-of-objects');
+
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var obj = {};
+        if (isArrayRows) {
+          // zip column names with positional values
+          for (var j = 0; j < cols.length; j++) {
+            var col = cols[j];
+            var colName = (typeof col === 'string') ? col : (col.name || col.field || String(j));
+            obj[colName.toLowerCase()] = row[j];
+          }
+        } else {
+          // array-of-objects — normalize keys to lowercase
+          var keys = Object.keys(row);
+          for (var k = 0; k < keys.length; k++) {
+            obj[keys[k].toLowerCase()] = row[keys[k]];
+          }
+        }
+        result.push(obj);
+      }
+
+      console.log('[TFM][_getBlockData] parsed rows:', JSON.parse(JSON.stringify(result)));
+
+      // Merge in any locally-saved rows not yet present in currentBlock.data
+      var blockNames = {};
+      for (var n = 0; n < result.length; n++) { blockNames[result[n].state_name] = true; }
+      for (var s = 0; s < this._savedStateRows.length; s++) {
+        if (!blockNames[this._savedStateRows[s].state_name]) {
+          result.push(this._savedStateRows[s]);
+        }
+      }
+
+      if (this._savedStateRows.length > 0) {
+        console.log('[TFM][_getBlockData] local cache merged (' + this._savedStateRows.length + ' rows):', this._savedStateRows);
+      }
+
+      console.log('[TFM][_getBlockData] final row count:', result.length);
+      return result;
+    } catch (err) {
+      console.error('[TFM][_getBlockData] ERROR:', err);
+      return [];
+    }
+  },
+
+  listStates(pageUrl) {
+    console.group('[TFM][listStates]');
+    console.log('current page URL:', pageUrl);
+
+    const data = this._getBlockData();
+    console.log('total rows from block:', data.length);
+
+    if (data.length > 0) {
+      console.table(data.map(function(r) {
+        return {
+          state_name: r.state_name,
+          page_url:   r.page_url,
+          state_ind:  r.state_ind,
+          url_match:  r.page_url === pageUrl,
+          deleted:    ApiStore._deletedStateNames.has(r.state_name)
+        };
+      }));
+    } else {
+      console.warn('No rows in block data');
+    }
+
+    const userId = this._getCurrentUserId();
+    const states = data
+      .filter(row => row.page_url === pageUrl && (row.state_ind === 'active' || row.state_ind === 'default') && !this._deletedStateNames.has(row.state_name) && String(row.user_id) === String(userId))
+      .map(row => ({ name: row.state_name, snapshot: this._rowToSnapshot(row) }));
+
+    console.log('states matching this URL + user (' + states.length + '):', states.map(function(s) { return s.name; }));
+    console.groupEnd();
+    return states;
+  },
+
+  loadState(stateName, pageUrl) {
+    const userId = this._getCurrentUserId();
+    const data = this._getBlockData();
+    const row = data.find(r => r.state_name === stateName && r.page_url === pageUrl && (r.state_ind === 'active' || r.state_ind === 'default') && !this._deletedStateNames.has(r.state_name) && String(r.user_id) === String(userId));
+    if (!row) {
+      Logger.debug(`[ApiStore] loadState: "${stateName}" not found in currentBlock.data`);
+      return null;
+    }
+    Logger.debug(`[ApiStore] loadState: "${stateName}" loaded from currentBlock.data`);
+    return this._rowToSnapshot(row);
+  },
+
+  getDefault(pageUrl) {
+    // If set/cleared locally this session, that takes priority over stale currentBlock.data
+    if (this._localDefaultStateName !== undefined) {
+      Logger.debug(`[ApiStore] getDefault: local override "${this._localDefaultStateName || 'none'}"`);
+      return this._localDefaultStateName;
+    }
+    const userId = this._getCurrentUserId();
+    const data = this._getBlockData();
+    const row = data.find(r => r.page_url === pageUrl && r.state_ind === 'default' && !this._deletedStateNames.has(r.state_name) && String(r.user_id) === String(userId));
+    const name = row?.state_name || null;
+    Logger.debug(`[ApiStore] getDefault: "${name || 'none'}" for page`);
+    return name;
+  },
+
+  _getCurrentUserId() {
+    return window.zPortal?.user?.id ?? null;
+  }
+};
+
+// ====
+// TABLEAU VIZ UTILITY
+// ====
+const TableauViz = {
+  // Track whether the viz has been verified as interactive so that repeated
+  // calls to waitForInteractive() return immediately instead of re-awaiting
+  // onFirstInteractive (which fires only once and will never resolve again
+  // on subsequent awaits, causing a 30-second hang).
+  // NOTE: We intentionally do NOT cache the viz object itself. Re-fetching via
+  // zPortal.tableau.getViz() on each call ensures viz.workbook reflects the
+  // latest live Tableau state. Caching the viz caused stale workbook references
+  // that produced "Cannot read properties of undefined (reading 'activeSheet')".
+  _isInteractive: false,
+
+  async getViz(vizId = CONFIG.VIZ_ID, retries = CONFIG.MAX_RETRIES) {
+    const activeVizId = vizId || CONFIG.VIZ_ID;
+    Logger.info(`Attempting to get viz: ${activeVizId}`);
+
+    if (!activeVizId) {
+      throw new Error('No viz id available.');
+    }
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        Logger.debug(`Attempt ${attempt}/${retries}`);
+
+        if (!window.zPortal || !window.zPortal.tableau) {
+          throw new Error('zPortal.tableau is not available');
+        }
+
+        const viz = await zPortal.tableau.getViz(activeVizId);
+
+        if (!viz) {
+          throw new Error(`Viz with id ${activeVizId} not found`);
+        }
+
+        Logger.info('Successfully retrieved viz');
+        return viz;
+
+      } catch (error) {
+        Logger.warn(`Attempt ${attempt} failed:`, error.message);
+
+        if (attempt < retries) {
+          Logger.debug(`Waiting ${CONFIG.RETRY_DELAY_MS}ms before retry...`);
+          await this.sleep(CONFIG.RETRY_DELAY_MS);
+        } else {
+          Logger.error('All retry attempts exhausted');
+          throw error;
+        }
+      }
+    }
+  },
+
+  async waitForInteractive(viz) {
+    // If we already verified the viz is interactive, return immediately.
+    // This prevents hanging on onFirstInteractive after the event has fired.
+    if (this._isInteractive) {
+      Logger.debug('Viz already interactive (cached state)');
+      return true;
+    }
+
+    Logger.info('Waiting for viz to be interactive...');
+
+    try {
+      if (viz.onFirstInteractive) {
+        await Promise.race([
+          viz.onFirstInteractive,
+          this.timeout(CONFIG.INTERACTIVE_TIMEOUT_MS, 'Viz interactive timeout')
+        ]);
+      }
+      this._isInteractive = true;
+      Logger.info('Viz is now interactive');
+      return true;
+    } catch (error) {
+      Logger.error('Failed waiting for viz to be interactive:', error);
+      throw error;
+    }
+  },
+
+  getWorkbookAndSheet(viz) {
+    Logger.debug('Getting workbook and active sheet...');
+
+    const workbook = viz.workbook;
+    if (!workbook) {
+      throw new Error('No workbook found on viz');
+    }
+
+    const activeSheet = workbook.getActiveSheet
+      ? workbook.getActiveSheet()
+      : workbook.activeSheet;
+
+    if (!activeSheet) {
+      throw new Error('No active sheet found on workbook');
+    }
+
+    Logger.debug('Successfully retrieved workbook and active sheet');
+    return { workbook, activeSheet };
+  },
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  timeout(ms, message) {
+    return new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(message)), ms)
+    );
+  }
+};
+
+// ====
+// FILTER & PARAMETER CAPTURE
+// ====
+const FilterCapture = {
+  async captureState(viz) {
+    Logger.info('Capturing current filter and parameter state...');
+    PerfTracker.start('captureState');
+
+    try {
+      // Retry workbook access up to 3 times with 1-second gaps.
+      // viz.workbook can throw "Cannot read properties of undefined (reading
+      // 'activeSheet')" when the Tableau component is briefly in a transition
+      // state (e.g. right after onFirstInteractive fires). Retrying gives it
+      // time to settle.
+      let workbook, activeSheet;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          ({ workbook, activeSheet } = TableauViz.getWorkbookAndSheet(viz));
+          break; // success
+        } catch (wbErr) {
+          if (attempt < 3) {
+            Logger.warn(`[FilterCapture] Workbook not ready (attempt ${attempt}/3): ${wbErr.message}. Retrying in 1s...`);
+            await TableauViz.sleep(1000);
+          } else {
+            throw wbErr;
+          }
+        }
+      }
+
+      PerfTracker.start('getFiltersAsync');
+      const filters = await activeSheet.getFiltersAsync();
+      PerfTracker.end('getFiltersAsync');
+    
+      PerfTracker.start('getParametersAsync');
+      const parameters = workbook.getParametersAsync
+        ? await workbook.getParametersAsync()
+        : [];
+      PerfTracker.end('getParametersAsync');
+
+      Logger.debug(`Retrieved ${filters.length} filters and ${parameters.length} parameters`);
+
+      const filterAgg = this.aggregateFilters(filters);
+      const userInfo = ZPortalUtil.getUserInfo();
+      const pageInfo = ZPortalUtil.getPageInfo();
+
+      const snapshot = {
+        filters: this.buildFilterSnapshot(filterAgg),
+        parameters: this.buildParameterSnapshot(parameters),
+        metadata: {
+          capturedAt: new Date().toISOString(),
+          pageUrl: window.location.href,
+          vizId: CONFIG.VIZ_ID,
+          user: userInfo,
+          page: pageInfo
+        }
+      };
+
+      this.logSnapshot(snapshot);
+      PerfTracker.end('captureState');
+      Logger.info('State capture complete');
+
+      return snapshot;
+
+    } catch (error) {
+      Logger.error('Failed to capture state:', error);
+      throw error;
+    }
+  },
+
+  aggregateFilters(filters) {
+    Logger.debug('Aggregating filters...');
+    const filterAgg = {};
+
+    for (const f of filters) {
+      const key = `${f.fieldName}::${f.filterType}`;
+
+      if (!filterAgg[key]) {
+        filterAgg[key] = {
+          fieldName: f.fieldName,
+          filterType: f.filterType,
+          values: new Set(),
+          hasValues: false,
+          min: null,
+          max: null
+        };
+      }
+
+      const entry = filterAgg[key];
+
+      if (f.filterType === 'categorical') {
+        if (Array.isArray(f.appliedValues) && f.appliedValues.length > 0) {
+          entry.hasValues = true;
+          for (const v of f.appliedValues) {
+            const val = this.extractValue(v);
+            entry.values.add(val);
+          }
+        }
+      } else if (f.filterType === 'range') {
+        const minVal = this.extractValue(f.minValue);
+        const maxVal = this.extractValue(f.maxValue);
+
+        if (minVal != null && minVal !== 'Null') {
+          if (entry.min == null || minVal < entry.min) entry.min = minVal;
+        }
+        if (maxVal != null && maxVal !== 'Null') {
+          if (entry.max == null || maxVal > entry.max) entry.max = maxVal;
+        }
+      }
+    }
+
+    Logger.debug(`Aggregated ${Object.keys(filterAgg).length} unique filters`);
+    return filterAgg;
+  },
+
+  buildFilterSnapshot(filterAgg) {
+    const snapshot = {};
+
+    for (const key of Object.keys(filterAgg)) {
+      const f = filterAgg[key];
+
+      if (f.filterType === 'categorical') {
+        snapshot[f.fieldName] = f.hasValues && f.values.size > 0
+          ? {
+              type: 'categorical',
+              values: [...f.values]
+            }
+          : {
+              type: 'categorical',
+              values: 'ALL'
+            };
+      } else if (f.filterType === 'range') {
+        snapshot[f.fieldName] = {
+          type: 'range',
+          min: f.min,
+          max: f.max
+        };
+      }
+    }
+
+    return snapshot;
+  },
+
+  buildParameterSnapshot(parameters) {
+    const snapshot = {};
+
+    parameters.forEach(p => {
+      const current = this.extractValue(p.currentValue);
+
+      snapshot[p.name] = {
+        value: current,
+        dataType: p.dataType,
+        allowableValuesType: p.allowableValues?.type || 'Unknown'
+      };
+    });
+
+    return snapshot;
+  },
+
+  extractValue(obj) {
+    if (obj == null) return null;
+
+    return obj.formattedValue ??
+           obj._formattedValue ??
+           obj.value ??
+           obj._value ??
+           String(obj);
+  },
+
+  logSnapshot(snapshot) {
+    if (CONFIG.LOG_LEVEL === 'none') return;
+  
+    Logger.info(`SNAPSHOT: ${Object.keys(snapshot.filters).length} filters, ${Object.keys(snapshot.parameters).length} parameters`);
+  
+    if (CONFIG.DEBUG_MODE) {
+      Logger.debug('\nJSON SNAPSHOT:');
+      Logger.debug(JSON.stringify(snapshot, null, 2));
+    }
+  }
+};
+
+// ====
+// OPTIMIZED FILTER & PARAMETER RESTORE
+// ====
+const FilterRestore = {
+  _worksheetFilterCache: null,
+  _worksheetCache: null,
+
+  /**
+   * Pre-build a mapping of fieldName -> worksheet
+   */
+  async buildFilterWorksheetMap(sheets) {
+    PerfTracker.start('buildFilterWorksheetMap');
+  
+    const filterMap = new Map();
+    const allFilters = new Map();
+  
+    const sheetFiltersPromises = sheets.map(async (sheet) => {
+      try {
+        const filters = sheet.getFiltersAsync ? await sheet.getFiltersAsync() : [];
+        return { sheet, filters };
+      } catch (err) {
+        Logger.debug(`Failed to get filters from sheet: ${err.message}`);
+        return { sheet, filters: [] };
+      }
+    });
+  
+    const sheetFiltersResults = await Promise.all(sheetFiltersPromises);
+  
+    for (const { sheet, filters } of sheetFiltersResults) {
+      for (const filter of filters) {
+        const normalizedName = this.normalizeFieldName(filter.fieldName);
+        const aliases = this.getFieldAliases(filter.fieldName);
+      
+        for (const alias of aliases) {
+          if (!filterMap.has(alias)) {
+            filterMap.set(alias, { sheet, filter });
+          }
+        }
+      
+        allFilters.set(normalizedName, filter);
+      }
+    }
+  
+    PerfTracker.end('buildFilterWorksheetMap');
+    Logger.perf(`Built filter map with ${filterMap.size} entries from ${sheets.length} sheets`);
+  
+    return { filterMap, allFilters };
+  },
+
+  /**
+   * DIFF-BASED RESTORE: Only applies filters/parameters that are in the saved state.
+   * Filters/parameters NOT in the saved state are left unchanged.
+   */
+  async restoreState(viz, snapshot) {
+    Logger.info('Restoring filter and parameter state (DIFF-BASED)...');
+    Logger.separator();
+    PerfTracker.reset();
+    PerfTracker.start('restoreState_total');
+
+    if (!snapshot) {
+      Logger.warn('No snapshot provided for restore');
+      return { success: false, errors: ['No snapshot provided'] };
+    }
+
+    const results = {
+      success: true,
+      filtersApplied: 0,
+      filtersFailed: 0,
+      filtersSkipped: 0,
+      parametersApplied: 0,
+      parametersFailed: 0,
+      parametersSkipped: 0,
+      errors: []
+    };
+
+    try {
+      // Retry workbook access up to 3 times with a 1-second gap.
+      // viz.workbook can throw "Cannot read properties of undefined (reading
+      // 'activeSheet')" when the Tableau component is briefly in a transition
+      // state (e.g. immediately after onFirstInteractive fires or right after a
+      // preceding captureState call). Retrying gives Tableau time to settle.
+      let workbook, activeSheet;
+      for (let wbAttempt = 1; wbAttempt <= 3; wbAttempt++) {
+        try {
+          ({ workbook, activeSheet } = TableauViz.getWorkbookAndSheet(viz));
+          break; // success
+        } catch (wbErr) {
+          if (wbAttempt < 3) {
+            Logger.warn(`[FilterRestore] Workbook not ready (attempt ${wbAttempt}/3): ${wbErr.message}. Retrying in 1s...`);
+            await TableauViz.sleep(1000);
+          } else {
+            throw wbErr; // bubble up after final attempt
+          }
+        }
+      }
+      const sheets = activeSheet.getWorksheets ? activeSheet.getWorksheets() : [activeSheet];
+
+      // Count operations - only what's in the saved state (diff-based)
+      const filterCount = Object.keys(snapshot.filters || {}).length;
+      const paramCount = Object.keys(snapshot.parameters || {}).length;
+      const totalOps = filterCount + paramCount;
+    
+      if (totalOps === 0) {
+        Logger.info('No changes to apply - saved state is empty');
+        return results;
+      }
+    
+      ProgressTracker.init(totalOps, 'Preparing restoration...');
+
+      // Pre-fetch current parameters
+      PerfTracker.start('prefetch_parameters');
+      let currentParams = [];
+      try {
+        currentParams = workbook.getParametersAsync ? await workbook.getParametersAsync() : [];
+      } catch (e) {
+        Logger.debug('Could not preload parameters');
+      }
+      const currentParamMap = new Map();
+      currentParams.forEach(p => currentParamMap.set(p.name, this.extractValue(p.currentValue)));
+      PerfTracker.end('prefetch_parameters');
+
+      // Build filter-to-worksheet mapping
+      PerfTracker.start('prefetch_filters');
+      const { filterMap, allFilters } = await this.buildFilterWorksheetMap(sheets);
+      PerfTracker.end('prefetch_filters');
+    
+      ProgressTracker.update(0, 'Applying changed filters...');
+
+      // Apply only the filters that are in the saved state
+      if (filterCount > 0) {
+        PerfTracker.start('apply_filters');
+        await this.restoreFiltersOptimized(sheets, snapshot.filters, results, filterMap, allFilters);
+        PerfTracker.end('apply_filters');
+      }
+
+      ProgressTracker.update(filterCount, 'Applying changed parameters...');
+
+      // Apply only the parameters that are in the saved state
+      if (paramCount > 0) {
+        PerfTracker.start('apply_parameters');
+        await this.restoreParametersOptimized(workbook, snapshot.parameters, results, currentParamMap);
+        PerfTracker.end('apply_parameters');
+      }
+
+      ProgressTracker.update(totalOps, 'Complete!');
+
+      // Log results
+      Logger.separator();
+      Logger.info('RESTORE RESULTS (DIFF-BASED):');
+      Logger.info(`  Changed Filters Applied: ${results.filtersApplied}`);
+      Logger.info(`  Filters Skipped (already match): ${results.filtersSkipped}`);
+      Logger.info(`  Filters Failed: ${results.filtersFailed}`);
+      Logger.info(`  Changed Parameters Applied: ${results.parametersApplied}`);
+      Logger.info(`  Parameters Skipped (already match): ${results.parametersSkipped}`);
+      Logger.info(`  Parameters Failed: ${results.parametersFailed}`);
+
+      if (results.errors.length > 0) {
+        Logger.warn(`  Errors encountered: ${results.errors.length}`);
+        results.errors.forEach(err => Logger.warn(`    - ${err}`));
+        results.success = false;
+      }
+
+      PerfTracker.end('restoreState_total');
+      PerfTracker.summary();
+    
+      Logger.separator();
+      Logger.info('State restore complete');
+
+      return results;
+
+    } catch (error) {
+      Logger.error('Failed to restore state:', error);
+      results.success = false;
+      results.errors.push(error.message);
+      return results;
+    }
+  },
+
+  /**
+   * Restore filters using cached mapping and batching
+   */
+  async restoreFiltersOptimized(sheets, filters, results, filterMap, allFilters) {
+    const filterEntries = Object.entries(filters);
+    const batchSize = CONFIG.BATCH_SIZE;
+  
+    Logger.perf(`Processing ${filterEntries.length} changed filters in batches of ${batchSize}`);
+  
+    for (let i = 0; i < filterEntries.length; i += batchSize) {
+      const batch = filterEntries.slice(i, i + batchSize);
+      PerfTracker.mark('filter_batch', `Processing batch ${Math.floor(i/batchSize) + 1}`);
+    
+      const batchPromises = batch.map(async ([fieldName, filterData]) => {
+        const startTime = performance.now();
+      
+        try {
+          const normalizedName = this.normalizeFieldName(fieldName);
+          const cached = filterMap.get(normalizedName) || filterMap.get(fieldName.toLowerCase().trim());
+          const currentFilter = allFilters.get(normalizedName);
+        
+          const targetSheet = cached?.sheet || sheets.find(s => 
+            typeof s.applyFilterAsync === 'function' || typeof s.clearFilterAsync === 'function'
+          );
+        
+          if (!targetSheet) {
+            Logger.warn(`No worksheet found for filter: ${fieldName}`);
+            results.filtersFailed++;
+            results.errors.push(`No worksheet for filter: ${fieldName}`);
+            return;
+          }
+        
+          if (filterData.type === 'categorical') {
+            const applied = await this.applyCategoricalFilterFast(targetSheet, fieldName, filterData, currentFilter, results);
+            if (!applied) results.filtersSkipped++;
+          } else if (filterData.type === 'range') {
+            const applied = await this.applyRangeFilterFast(targetSheet, fieldName, filterData, currentFilter, results);
+            if (!applied) results.filtersSkipped++;
+          }
+        
+          ProgressTracker.increment(`Applied: ${fieldName}`);
+        
+          if (CONFIG.DEBUG_MODE) {
+            Logger.perf(`  Filter "${fieldName}" took ${(performance.now() - startTime).toFixed(2)}ms`);
+          }
+        
+        } catch (error) {
+          Logger.error(`Failed to apply filter ${fieldName}:`, error);
+          results.filtersFailed++;
+          results.errors.push(`Filter ${fieldName}: ${error.message}`);
+        }
+      });
+    
+      await Promise.all(batchPromises);
+    
+      if (i + batchSize < filterEntries.length && CONFIG.BATCH_DELAY_MS > 0) {
+        await TableauViz.sleep(CONFIG.BATCH_DELAY_MS);
+      }
+    }
+  },
+
+  /**
+   * FAST categorical filter application with pre-fetched current state
+   */
+  async applyCategoricalFilterFast(sheet, fieldName, filterData, currentFilter, results) {
+    if (CONFIG.APPLY_ONLY_DIFFERENCES && currentFilter) {
+      const currentVals = Array.isArray(currentFilter.appliedValues)
+        ? currentFilter.appliedValues.map(v => this.extractValue(v))
+        : [];
+      const isAllCurrent = !currentVals || currentVals.length === 0;
+      const isAllTarget = filterData.values === 'ALL' || (Array.isArray(filterData.values) && filterData.values.length === 0);
+
+      const same = (isAllCurrent && isAllTarget) ||
+        (!isAllCurrent && !isAllTarget && this.arraysEqualAsSet(currentVals, filterData.values || []));
+
+      if (same) {
+        Logger.debug(`  Skipping categorical (no change): ${fieldName}`);
+        return false;
+      }
+    }
+
+    if (filterData.values === 'ALL' || (Array.isArray(filterData.values) && filterData.values.length === 0)) {
+      Logger.debug(`  Clearing filter (ALL): ${fieldName}`);
+      if (sheet.clearFilterAsync) {
+        await sheet.clearFilterAsync(fieldName);
+      } else if (sheet.applyFilterAsync) {
+        await sheet.applyFilterAsync(fieldName, [], 'all');
+      }
+    } else {
+      Logger.debug(`  Applying ${filterData.values.length} values to: ${fieldName}`);
+      if (!sheet.applyFilterAsync) {
+        Logger.warn(`applyFilterAsync not available for: ${fieldName}`);
+        return false;
+      }
+      await sheet.applyFilterAsync(fieldName, filterData.values, 'replace');
+    }
+
+    results.filtersApplied++;
+    Logger.debug(`  ✓ Applied filter: ${fieldName}`);
+    return true;
+  },
+
+  /**
+   * FAST range filter application with pre-fetched current state
+   */
+  async applyRangeFilterFast(sheet, fieldName, filterData, currentFilter, results) {
+    if (filterData.min === null && filterData.max === null) {
+      Logger.debug(`  Skipping range filter with null min/max: ${fieldName}`);
+      return false;
+    }
+
+    if (typeof sheet.applyRangeFilterAsync !== 'function') {
+      Logger.warn(`applyRangeFilterAsync not available for: ${fieldName}`);
+      return false;
+    }
+
+    if (CONFIG.APPLY_ONLY_DIFFERENCES && currentFilter) {
+      const curMin = this.extractValue(currentFilter.minValue);
+      const curMax = this.extractValue(currentFilter.maxValue);
+      const sameMin = (curMin == null && filterData.min == null) || curMin === filterData.min;
+      const sameMax = (curMax == null && filterData.max == null) || curMax === filterData.max;
+    
+      if (sameMin && sameMax) {
+        Logger.debug(`  Skipping range (no change): ${fieldName}`);
+        return false;
+      }
+    }
+
+    const rangeOptions = {};
+    if (filterData.min !== null && filterData.min !== 'Null') rangeOptions.min = filterData.min;
+    if (filterData.max !== null && filterData.max !== 'Null') rangeOptions.max = filterData.max;
+
+    if (Object.keys(rangeOptions).length === 0) {
+      Logger.debug(`  Skipping range filter with no valid values: ${fieldName}`);
+      return false;
+    }
+
+    await sheet.applyRangeFilterAsync(fieldName, rangeOptions);
+    results.filtersApplied++;
+    Logger.debug(`  ✓ Applied range filter: ${fieldName}`);
+    return true;
+  },
+
+  /**
+   * Restore parameters with batching and pre-fetched current values
+   */
+  async restoreParametersOptimized(workbook, parameters, results, currentParamMap) {
+    const paramEntries = Object.entries(parameters);
+    const batchSize = CONFIG.BATCH_SIZE;
+  
+    Logger.perf(`Processing ${paramEntries.length} changed parameters in batches of ${batchSize}`);
+  
+    for (let i = 0; i < paramEntries.length; i += batchSize) {
+      const batch = paramEntries.slice(i, i + batchSize);
+      PerfTracker.mark('param_batch', `Processing batch ${Math.floor(i/batchSize) + 1}`);
+    
+      const batchPromises = batch.map(async ([paramName, paramData]) => {
+        const startTime = performance.now();
+      
+        try {
+          if (CONFIG.APPLY_ONLY_DIFFERENCES && currentParamMap.has(paramName)) {
+            const curVal = currentParamMap.get(paramName);
+            if (curVal === paramData.value) {
+              Logger.debug(`  Skipping parameter (no change): ${paramName}`);
+              results.parametersSkipped++;
+              ProgressTracker.increment(`Skipped: ${paramName}`);
+              return;
+            }
+          }
+
+          if (workbook.changeParameterValueAsync) {
+            await workbook.changeParameterValueAsync(paramName, paramData.value);
+            results.parametersApplied++;
+            Logger.debug(`  ✓ Applied parameter: ${paramName} = ${paramData.value}`);
+            ProgressTracker.increment(`Applied: ${paramName}`);
+          } else {
+            throw new Error('changeParameterValueAsync method not available');
+          }
+        
+          if (CONFIG.DEBUG_MODE) {
+            Logger.perf(`  Parameter "${paramName}" took ${(performance.now() - startTime).toFixed(2)}ms`);
+          }
+
+        } catch (error) {
+          Logger.error(`Failed to apply parameter ${paramName}:`, error);
+          results.parametersFailed++;
+          results.errors.push(`Parameter ${paramName}: ${error.message}`);
+        }
+      });
+    
+      await Promise.all(batchPromises);
+    
+      if (i + batchSize < paramEntries.length && CONFIG.BATCH_DELAY_MS > 0) {
+        await TableauViz.sleep(CONFIG.BATCH_DELAY_MS);
+      }
+    }
+  },
+
+  // Helper methods
+  normalizeFieldName(name) {
+    return (name || '').toLowerCase().trim();
+  },
+
+  getFieldAliases(fieldName) {
+    const base = this.normalizeFieldName(fieldName);
+    const stripped = base.replace(/\s*\(.*\)$/, '').trim();
+    return [...new Set([base, stripped])];
+  },
+
+  arraysEqualAsSet(a = [], b = []) {
+    if (a.length !== b.length) return false;
+    const setA = new Set(a);
+    for (const v of b) if (!setA.has(v)) return false;
+    return true;
+  },
+
+  extractValue(obj) {
+    if (obj == null) return null;
+    return obj.formattedValue ?? obj._formattedValue ?? obj.value ?? obj._value ?? String(obj);
+  }
+};
+
+// ====
+// INITIAL STATE MANAGER
+// Captures the baseline state when the page loads for diff comparison
+// FIX: Added timeout protection and error handling to prevent hanging
+// ====
+const InitialStateManager = {
+  _initialState: null,
+  _capturePromise: null,
+  // Set to true by _lockBaseline() AFTER autoRestoreOnLoad() has run.
+  // Until it is locked, getInitialState() may retry a failed capture.
+  // Once locked, no further re-capture is allowed — defaults may be applied.
+  _baselineLocked: false,
+  _captureTimeout: CONFIG.INTERACTIVE_TIMEOUT_MS + 10000, // interactive timeout + 10s buffer
+
+  /**
+   * Capture initial state on page load (may be called more than once if the
+   * first attempt fails and the baseline has not yet been locked).
+   */
+  async captureInitialState() {
+    Logger.info('[InitialStateManager] Starting initial state capture...');
+
+    // Prevent multiple simultaneous captures
+    if (this._capturePromise) {
+      Logger.debug('[InitialStateManager] Capture already in progress, waiting...');
+      return this._capturePromise;
+    }
+
+    this._capturePromise = this._captureWithTimeout();
+  
+    try {
+      this._initialState = await this._capturePromise;
+      Logger.info('[InitialStateManager] Initial state captured successfully');
+      Logger.debug(`[InitialStateManager] ${Object.keys(this._initialState?.filters || {}).length} filters, ${Object.keys(this._initialState?.parameters || {}).length} parameters`);
+      return this._initialState;
+    } catch (error) {
+      Logger.error('[InitialStateManager] Failed to capture initial state:', error.message);
+      this._initialState = null;
+      return null;
+    } finally {
+      this._capturePromise = null;
+    }
+  },
+
+  /**
+   * FIX: Wrap capture in timeout to prevent hanging
+   */
+  async _captureWithTimeout() {
+    return Promise.race([
+      this._doCapture(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Initial state capture timed out')), this._captureTimeout)
+      )
+    ]);
+  },
+
+  async _doCapture() {
+    try {
+      const viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+      await TableauViz.waitForInteractive(viz);
+      return await FilterCapture.captureState(viz);
+    } catch (error) {
+      Logger.error('[InitialStateManager] Capture error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get the initial state - async to support await calls
+   * FIX: Made async and auto-captures if not yet captured
+   */
+  async getInitialState() {
+    // If we already have it, return immediately
+    if (this._initialState) {
+      Logger.debug('[InitialStateManager] Returning cached initial state');
+      return this._initialState;
+    }
+  
+    // If capture is in progress, wait for it
+    if (this._capturePromise) {
+      Logger.debug('[InitialStateManager] Waiting for in-progress capture...');
+      try {
+        return await this._capturePromise;
+      } catch (error) {
+        Logger.warn('[InitialStateManager] In-progress capture failed:', error.message);
+        return null;
+      }
+    }
+
+    // If the baseline has been locked (autoRestoreOnLoad has completed), do NOT
+    // re-capture. Default filters may already be applied at this point; capturing
+    // now would produce a filtered baseline and break "Changes from Initial State".
+    if (this._baselineLocked) {
+      Logger.warn('[InitialStateManager] Baseline locked after auto-restore; not re-capturing to avoid a filtered baseline.');
+      return null;
+    }
+
+    // Otherwise, try to capture now (baseline not yet locked → safe to retry)
+    Logger.info('[InitialStateManager] No initial state available, capturing now...');
+    return await this.captureInitialState();
+  },
+
+  /**
+   * Lock the baseline. Called by autoRestoreOnLoad() AFTER a final capture
+   * attempt and BEFORE any default filters are applied.
+   * Once locked, getInitialState() will never trigger a new capture.
+   */
+  _lockBaseline() {
+    if (!this._baselineLocked) {
+      this._baselineLocked = true;
+      Logger.debug('[InitialStateManager] Baseline locked — no further re-capture allowed');
+    }
+  },
+
+  /**
+   * Synchronous getter for when you just want to check the cached state
+   */
+  getCachedState() {
+    return this._initialState;
+  },
+
+  hasInitialState() {
+    return this._initialState !== null;
+  },
+
+  reset() {
+    this._initialState = null;
+    this._capturePromise = null;
+    this._baselineLocked = false;
+    Logger.debug('[InitialStateManager] Reset');
+  }
+};
+
+async function logInitialStateValues(snapshot, label = 'INITIAL DASHBOARD STATE') {
+  if (!snapshot) {
+    console.warn(`[${label}] No snapshot available to log`);
+    return;
+  }
+
+  const filters = snapshot.filters || {};
+  const params = snapshot.parameters || {};
+
+  console.log('='.repeat(50));
+  console.log(`[TABLEAU-FILTER-MGR][INFO] [${label}] Captured at: ${snapshot.metadata?.capturedAt || 'n/a'}`);
+
+  // --- LIST FILTERS ---
+  console.log(`[TABLEAU-FILTER-MGR][INFO] [${label}] Filters (${Object.keys(filters).length}):`);
+
+  // Fetch live filter objects so we can call getDomainAsync() on "ALL" filters
+  let liveFilterMap = {};
+  try {
+    const viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+    const { activeSheet } = TableauViz.getWorkbookAndSheet(viz);
+    const sheets = activeSheet.getWorksheets ? activeSheet.getWorksheets() : [activeSheet];
+
+    for (const sheet of sheets) {
+      try {
+        const sheetFilters = await sheet.getFiltersAsync();
+        for (const f of sheetFilters) {
+          if (!liveFilterMap[f.fieldName]) {
+            liveFilterMap[f.fieldName] = f; // store first occurrence
+          }
+        }
+      } catch (e) { /* skip sheet */ }
+    }
+  } catch (e) {
+    console.warn(`[${label}] Could not fetch live filters for domain lookup:`, e.message);
+  }
+
+  // Now log each filter, expanding "ALL" with actual domain values
+  for (const [name, f] of Object.entries(filters)) {
+    let valueDisplay = '';
+
+    if (f.type === 'categorical') {
+      const isAll = f.values === 'ALL' || (Array.isArray(f.values) && f.values.length === 0);
+
+      if (isAll) {
+        // Try to get the actual domain values
+        const liveFilter = liveFilterMap[name];
+        if (liveFilter && typeof liveFilter.getDomainAsync === 'function') {
+          try {
+            const domain = await liveFilter.getDomainAsync('database'); // 'database' = all possible values
+            const domainValues = (domain?.values || []).map(v =>
+              v.formattedValue ?? v._formattedValue ?? v.value ?? String(v)
+            );
+            valueDisplay = domainValues.length > 0
+              ? `(All) → [${domainValues.join(', ')}]`
+              : '(All) → [no domain values returned]';
+          } catch (e) {
+            valueDisplay = `(All) → [domain fetch failed: ${e.message}]`;
+          }
+        } else {
+          valueDisplay = '(All) → [live filter not found for domain lookup]';
+        }
+      } else {
+        valueDisplay = JSON.stringify(f.values);
+      }
+
+    } else if (f.type === 'range') {
+      valueDisplay = `Min: ${f.min ?? 'None'}, Max: ${f.max ?? 'None'}`;
+    }
+
+    console.log(`[TABLEAU-FILTER-MGR][INFO]   • FILTER: "${name}" [${f.type}] -> ${valueDisplay}`);
+  }
+
+  // --- LIST PARAMETERS ---
+  console.log(`[TABLEAU-FILTER-MGR][INFO] [${label}] Parameters (${Object.keys(params).length}):`);
+  Object.entries(params).forEach(([name, p]) => {
+    console.log(`[TABLEAU-FILTER-MGR][INFO]   • PARAM:  "${name}" -> ${p.value} (Type: ${p.dataType})`);
+  });
+
+  console.log('='.repeat(50));
+}
+
+// ====
+// FILTER COMPARISON UTILITY
+// Compares current state vs initial state to identify changes
+// FIX: Added extensive error handling, logging, and timeout protection
+// FIX: Fixed potential infinite loops in deep comparison
+// ====
+const FilterComparison = {
+  _comparisonTimeout: 5000, // 5 second timeout for comparison operations
+
+  /**
+   * Compare current state against initial state and return only changed items
+   * FIX: Wrapped in try-catch with detailed logging at each step
+   * FIX: Added timeout protection to prevent hanging
+   */
+  async compareStates(currentState, initialState) {
+    Logger.info('[FilterComparison] Starting comparison...');
+    const startTime = performance.now();
+  
+    try {
+      // Validate inputs
+      if (!currentState) {
+        Logger.warn('[FilterComparison] No current state provided');
+        return { filters: {}, parameters: {}, hasChanges: false };
+      }
+    
+      if (!initialState) {
+        Logger.warn('[FilterComparison] No initial state available — cannot compute diff');
+        return {
+          filters: {},
+          parameters: {},
+          hasChanges: false,
+          initialStateMissing: true
+        };
+      }
+    
+      // Run comparison with timeout protection
+      const result = await Promise.race([
+        this._doComparison(currentState, initialState),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Comparison timed out')), this._comparisonTimeout)
+        )
+      ]);
+    
+      const duration = performance.now() - startTime;
+      Logger.info(`[FilterComparison] Comparison complete in ${duration.toFixed(2)}ms`);
+      Logger.info(`[FilterComparison] Changed: ${Object.keys(result.filters).length} filters, ${Object.keys(result.parameters).length} parameters`);
+    
+      return result;
+    
+    } catch (error) {
+      Logger.error('[FilterComparison] Comparison failed:', error.message);
+      // FIX: Return current state as fallback instead of hanging
+      return {
+        filters: currentState?.filters || {},
+        parameters: currentState?.parameters || {},
+        hasChanges: true,
+        error: error.message
+      };
+    }
+  },
+
+  /**
+   * FIX: Separated comparison logic with step-by-step logging
+   */
+  _doComparison(currentState, initialState) {
+    return new Promise((resolve) => {
+      Logger.debug('[FilterComparison] Comparing filters...');
+      const changedFilters = this._compareFilters(
+        currentState.filters || {},
+        initialState.filters || {}
+      );
+    
+      Logger.debug('[FilterComparison] Comparing parameters...');
+      const changedParameters = this._compareParameters(
+        currentState.parameters || {},
+        initialState.parameters || {}
+      );
+    
+      const hasChanges = Object.keys(changedFilters).length > 0 || 
+                    Object.keys(changedParameters).length > 0;
+    
+      resolve({
+        filters: changedFilters,
+        parameters: changedParameters,
+        hasChanges,
+        changedFilterNames: Object.keys(changedFilters),
+        changedParameterNames: Object.keys(changedParameters)
+      });
+    });
+  },
+
+  /**
+   * Compare filters and return only changed ones
+   * FIX: Added null checks and type validation at each step
+   */
+  _compareFilters(currentFilters, initialFilters) {
+    const changed = {};
+  
+    try {
+      const currentKeys = Object.keys(currentFilters || {});
+      Logger.debug(`[FilterComparison] Checking ${currentKeys.length} filters...`);
+    
+      // Use a simple for loop instead of forEach to avoid closure issues
+      for (let i = 0; i < currentKeys.length; i++) {
+        const filterName = currentKeys[i];
+      
+        try {
+          const currentFilter = currentFilters[filterName];
+          const initialFilter = initialFilters[filterName];
+        
+          // FIX: Added detailed logging for debugging
+          Logger.debug(`[FilterComparison] Checking filter: ${filterName}`);
+        
+          if (!initialFilter) {
+            // New filter that didn't exist initially
+            Logger.debug(`[FilterComparison] Filter "${filterName}" is new`);
+            changed[filterName] = currentFilter;
+            continue;
+          }
+        
+          const isEqual = this._areFiltersEqual(currentFilter, initialFilter);
+        
+          if (!isEqual) {
+            Logger.debug(`[FilterComparison] Filter "${filterName}" has changed`);
+            changed[filterName] = currentFilter;
+          }
+        
+        } catch (filterError) {
+          Logger.warn(`[FilterComparison] Error comparing filter "${filterName}":`, filterError.message);
+          // Include filter in changes if comparison fails (safe fallback)
+          changed[filterName] = currentFilters[filterName];
+        }
+      }
+    
+    } catch (error) {
+      Logger.error('[FilterComparison] Filter comparison error:', error.message);
+    }
+  
+    return changed;
+  },
+
+  /**
+   * Compare two filter objects
+   * FIX: Added type checking and handles all edge cases (null, "ALL", arrays, etc.)
+   */
+  _areFiltersEqual(current, initial) {
+    try {
+      // Handle null/undefined
+      if (!current && !initial) return true;
+      if (!current || !initial) return false;
+    
+      // Check type match
+      if (current.type !== initial.type) return false;
+    
+      if (current.type === 'categorical') {
+        return this._areCategoricalFiltersEqual(current, initial);
+      } else if (current.type === 'range') {
+        return this._areRangeFiltersEqual(current, initial);
+      }
+    
+      // Unknown type - consider different
+      return false;
+    
+    } catch (error) {
+      Logger.warn('[FilterComparison] Filter equality check error:', error.message);
+      return false; // Assume different if comparison fails
+    }
+  },
+
+  /**
+   * Compare categorical filters
+   * FIX: Handles "ALL" values, arrays, and edge cases properly
+   */
+  _areCategoricalFiltersEqual(current, initial) {
+    const currentVals = current.values;
+    const initialVals = initial.values;
+  
+    // Both are "ALL"
+    if (currentVals === 'ALL' && initialVals === 'ALL') return true;
+  
+    // One is "ALL", the other isn't
+    if (currentVals === 'ALL' || initialVals === 'ALL') return false;
+  
+    // Both should be arrays at this point
+    if (!Array.isArray(currentVals) || !Array.isArray(initialVals)) {
+      Logger.debug('[FilterComparison] Unexpected non-array values in categorical filter');
+      return String(currentVals) === String(initialVals);
+    }
+  
+    // Empty arrays are equivalent to "ALL" in some cases
+    if (currentVals.length === 0 && initialVals.length === 0) return true;
+  
+    // Different lengths
+    if (currentVals.length !== initialVals.length) return false;
+  
+    // FIX: Use Set comparison to avoid O(n²) complexity that could cause slowness
+    const currentSet = new Set(currentVals.map(v => String(v)));
+    const initialSet = new Set(initialVals.map(v => String(v)));
+  
+    if (currentSet.size !== initialSet.size) return false;
+  
+    for (const val of currentSet) {
+      if (!initialSet.has(val)) return false;
+    }
+  
+    return true;
+  },
+
+  /**
+   * Compare range filters
+   * FIX: Handles null/undefined min/max values properly
+   */
+  _areRangeFiltersEqual(current, initial) {
+    // Normalize null/undefined/"Null" to null
+    const normalizeRangeVal = (val) => {
+      if (val === null || val === undefined || val === 'Null') return null;
+      return val;
+    };
+  
+    const curMin = normalizeRangeVal(current.min);
+    const curMax = normalizeRangeVal(current.max);
+    const iniMin = normalizeRangeVal(initial.min);
+    const iniMax = normalizeRangeVal(initial.max);
+  
+    // Compare with loose equality for numeric comparisons
+    const minEqual = (curMin === iniMin) || (curMin == iniMin);
+    const maxEqual = (curMax === iniMax) || (curMax == iniMax);
+  
+    return minEqual && maxEqual;
+  },
+
+  /**
+   * Compare parameters and return only changed ones
+   * FIX: Added null checks and type validation
+   */
+  _compareParameters(currentParams, initialParams) {
+    const changed = {};
+  
+    try {
+      const currentKeys = Object.keys(currentParams || {});
+      Logger.debug(`[FilterComparison] Checking ${currentKeys.length} parameters...`);
+    
+      for (let i = 0; i < currentKeys.length; i++) {
+        const paramName = currentKeys[i];
+      
+        try {
+          const currentParam = currentParams[paramName];
+          const initialParam = initialParams[paramName];
+        
+          Logger.debug(`[FilterComparison] Checking parameter: ${paramName}`);
+        
+          if (!initialParam) {
+            // New parameter
+            Logger.debug(`[FilterComparison] Parameter "${paramName}" is new`);
+            changed[paramName] = currentParam;
+            continue;
+          }
+        
+          // Compare parameter values
+          const currentVal = currentParam?.value;
+          const initialVal = initialParam?.value;
+        
+          // FIX: Handle various value types and null comparisons
+          if (!this._areValuesEqual(currentVal, initialVal)) {
+            Logger.debug(`[FilterComparison] Parameter "${paramName}" changed: ${initialVal} -> ${currentVal}`);
+            changed[paramName] = currentParam;
+          }
+        
+        } catch (paramError) {
+          Logger.warn(`[FilterComparison] Error comparing parameter "${paramName}":`, paramError.message);
+          changed[paramName] = currentParams[paramName];
+        }
+      }
+    
+    } catch (error) {
+      Logger.error('[FilterComparison] Parameter comparison error:', error.message);
+    }
+  
+    return changed;
+  },
+
+  /**
+   * Compare two values with type coercion
+   * FIX: Handles dates, numbers, strings, null/undefined properly
+   */
+  _areValuesEqual(val1, val2) {
+    // Both null/undefined
+    if (val1 == null && val2 == null) return true;
+  
+    // One is null/undefined
+    if (val1 == null || val2 == null) return false;
+  
+    // Try string comparison (handles most cases)
+    if (String(val1) === String(val2)) return true;
+  
+    // Try numeric comparison
+    if (!isNaN(val1) && !isNaN(val2)) {
+      return Number(val1) === Number(val2);
+    }
+  
+    return false;
+  },
+
+  /**
+   * Generate a human-readable summary of changes
+   */
+  getSummary(comparisonResult) {
+    const filterCount = Object.keys(comparisonResult.filters || {}).length;
+    const paramCount = Object.keys(comparisonResult.parameters || {}).length;
+  
+    if (!comparisonResult.hasChanges) {
+      return 'No changes from initial state';
+    }
+  
+    const parts = [];
+    if (filterCount > 0) {
+      parts.push(`${filterCount} filter${filterCount !== 1 ? 's' : ''}`);
+    }
+    if (paramCount > 0) {
+      parts.push(`${paramCount} parameter${paramCount !== 1 ? 's' : ''}`);
+    }
+  
+    return `Changes: ${parts.join(', ')}`;
+  },
+
+  /**
+   * ALIAS: compare() for backwards compatibility with existing code
+   * FIX: This wraps compareStates() and returns in the expected format
+   */
+  async compare(currentState, initialState) {
+    Logger.info('[FilterComparison] compare() called - using compareStates()');
+  
+    try {
+      const result = await this.compareStates(currentState, initialState);
+    
+      // Return in the format expected by existing code
+      const filterChangeCount = Object.keys(result.filters || {}).length;
+      const parameterChangeCount = Object.keys(result.parameters || {}).length;
+      return {
+        changedFilters: result.filters || {},
+        changedParameters: result.parameters || {},
+        unchangedFilters: this._getUnchangedItems(currentState?.filters, result.filters),
+        unchangedParameters: this._getUnchangedItems(currentState?.parameters, result.parameters),
+        totalChangeCount: filterChangeCount + parameterChangeCount,
+        filterChangeCount: filterChangeCount,
+        parameterChangeCount: parameterChangeCount,
+        hasChanges: result.hasChanges,
+        initialStateMissing: result.initialStateMissing || false,
+        changedFilterNames: result.changedFilterNames || [],
+        changedParameterNames: result.changedParameterNames || []
+      };
+    } catch (error) {
+      Logger.error('[FilterComparison] compare() failed:', error.message);
+      // Return safe fallback
+      const fallbackFilterCount = Object.keys(currentState?.filters || {}).length;
+      const fallbackParamCount = Object.keys(currentState?.parameters || {}).length;
+      return {
+        changedFilters: {},
+        changedParameters: {},
+        unchangedFilters: {},
+        unchangedParameters: {},
+        totalChangeCount: 0,
+        filterChangeCount: 0,
+        parameterChangeCount: 0,
+        hasChanges: false,
+        initialStateMissing: true,
+        error: error.message
+      };
+    }
+  },
+
+  /**
+   * Helper: Get items that are unchanged (in current but not in changed)
+   */
+  _getUnchangedItems(currentItems, changedItems) {
+    const unchanged = {};
+    const current = currentItems || {};
+    const changed = changedItems || {};
+  
+    for (const key of Object.keys(current)) {
+      if (!changed[key]) {
+        unchanged[key] = current[key];
+      }
+    }
+    return unchanged;
+  },
+
+  /**
+   * Create a diff snapshot containing only changed items for storage
+   * FIX: Added timeout protection and error handling
+   */
+  async createDiffSnapshot(currentSnapshot, initialState) {
+    Logger.info('[FilterComparison] createDiffSnapshot() called');
+  
+    try {
+      const comparison = await this.compareStates(currentSnapshot, initialState);
+    
+      // Build minimal snapshot with only changed items
+      const filterCount = Object.keys(comparison.filters || {}).length;
+      const paramCount = Object.keys(comparison.parameters || {}).length;
+      const diffSnapshot = {
+        filters: comparison.filters || {},
+        parameters: comparison.parameters || {},
+        metadata: {
+          ...currentSnapshot.metadata,
+          isDiffSnapshot: true,
+          filterChangeCount: filterCount,
+          parameterChangeCount: paramCount,
+          totalChangeCount: filterCount + paramCount,
+          changedFilterNames: comparison.changedFilterNames || [],
+          changedParameterNames: comparison.changedParameterNames || []
+        }
+      };
+    
+      Logger.info(`[FilterComparison] Diff snapshot created: ${diffSnapshot.metadata.filterChangeCount} filters, ${diffSnapshot.metadata.parameterChangeCount} parameters`);
+      return diffSnapshot;
+    
+    } catch (error) {
+      Logger.error('[FilterComparison] createDiffSnapshot() failed:', error.message);
+      // Return full snapshot as fallback
+      return {
+        ...currentSnapshot,
+        metadata: {
+          ...currentSnapshot.metadata,
+          isDiffSnapshot: false,
+          diffError: error.message
+        }
+      };
+    }
+  },
+
+  /**
+   * Get a human-readable change summary for display
+   */
+  getChangeSummary(snapshot) {
+    if (!snapshot?.metadata) {
+      return 'Unknown changes';
+    }
+  
+    // Check if it's a diff snapshot with metadata
+    if (snapshot.metadata.isDiffSnapshot) {
+      const filterCount = snapshot.metadata.filterChangeCount || 0;
+      const paramCount = snapshot.metadata.parameterChangeCount || 0;
+      const names = snapshot.metadata.changedFilterNames || [];
+    
+      if (filterCount === 0 && paramCount === 0) {
+        return 'No changes';
+      }
+    
+      let summary = `Changes: `;
+      const parts = [];
+    
+      if (filterCount > 0) {
+        // Show first 2 filter names
+        const displayNames = names.slice(0, 2).join(', ');
+        if (filterCount > 2) {
+          parts.push(`${displayNames} (+${filterCount - 2} more filters)`);
+        } else {
+          parts.push(displayNames || `${filterCount} filter${filterCount !== 1 ? 's' : ''}`);
+        }
+      }
+    
+      if (paramCount > 0) {
+        parts.push(`${paramCount} parameter${paramCount !== 1 ? 's' : ''}`);
+      }
+    
+      return summary + parts.join(', ');
+    }
+  
+    // Fallback for non-diff snapshots
+    const filterCount = Object.keys(snapshot.filters || {}).length;
+    const paramCount = Object.keys(snapshot.parameters || {}).length;
+    return `${filterCount} filters, ${paramCount} parameters`;
+  }
+};
+
+// ====
+// PUBLIC API
+// ====
+const TableauFilterManager = {
+  /**
+   * DIFF-BASED SAVE: Only saves filters/parameters that differ from the Initial Dashboard State.
+   */
+  async saveState(stateName = 'default') {
+    Logger.separator();
+    Logger.info(`SAVING STATE (DIFF-BASED): "${stateName}"`);
+    Logger.separator();
+
+    try {
+      const viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+      await TableauViz.waitForInteractive(viz);
+
+      // Capture current state
+      const currentSnapshot = await FilterCapture.captureState(viz);
+    
+      // Get initial state for comparison
+      const initialState = await InitialStateManager.getInitialState();
+    
+      // Create diff-based snapshot (only changed items)
+      const diffSnapshot = await FilterComparison.createDiffSnapshot(currentSnapshot, initialState);
+    
+      // Check if there are any changes
+      if (diffSnapshot.metadata.totalChangeCount === 0) {
+        Logger.warn('No changes from initial dashboard state - nothing to save');
+        return { 
+          success: false, 
+          error: 'No changes from initial dashboard state',
+          noChanges: true
+        };
+      }
+    
+      const apiResult = await ApiStore.saveState(stateName, diffSnapshot);
+      if (!apiResult.success) {
+        throw new Error(apiResult.error || 'Failed to save to DB');
+      }
+
+      Logger.info(`✓ State "${stateName}" saved successfully (${diffSnapshot.metadata.totalChangeCount} changes)`);
+      return { success: true, snapshot: diffSnapshot };
+
+    } catch (error) {
+      Logger.error('Save state failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * DIFF-BASED LOAD: Applies the filters/parameters stored in the saved state
+   * and resets any leftover filters from a previously applied view back to
+   * their initial (baseline) values.
+   */
+  async loadState(stateName = 'default') {
+    Logger.separator();
+    Logger.info(`LOADING STATE (DIFF-BASED): "${stateName}"`);
+    Logger.separator();
+
+    try {
+      const snapshot = ApiStore.loadState(stateName, window.location.href);
+
+      if (!snapshot || typeof snapshot !== 'object') {
+        throw new Error(`No saved state found with name: ${stateName}`);
+      }
+
+      // Ensure snapshot has the expected shape even if stored data is incomplete
+      if (!snapshot.filters)    snapshot.filters    = {};
+      if (!snapshot.parameters) snapshot.parameters = {};
+
+      Logger.info('Snapshot loaded from currentBlock.data');
+      Logger.debug(`Captured at: ${snapshot.metadata?.capturedAt}`);
+
+      const savedPageUrl = snapshot.metadata?.pageUrl;
+      const currentPageUrl = window.location.href;
+
+      if (savedPageUrl && savedPageUrl !== currentPageUrl) {
+        Logger.warn('Saved state is from a different page');
+      }
+
+      const viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+      await TableauViz.waitForInteractive(viz);
+
+      // Build a merged snapshot that includes reset entries for stale filters.
+      // This ensures switching views clears filters from the prior view that
+      // are not part of the new view.
+      const mergedSnapshot = await this._buildMergedSnapshot(viz, snapshot);
+
+      const filterCount = Object.keys(mergedSnapshot.filters || {}).length;
+      const paramCount = Object.keys(mergedSnapshot.parameters || {}).length;
+      Logger.info(`Applying ${filterCount} filter operations and ${paramCount} parameter operations (including resets)`);
+
+      const results = await FilterRestore.restoreState(viz, mergedSnapshot);
+      const success = results && results.success;
+
+      if (success) {
+        Logger.info(`✓ State "${stateName}" loaded successfully`);
+      } else {
+        Logger.warn(`⚠ State "${stateName}" loaded with errors`);
+      }
+
+      return { success: !!success, results: results || {}, snapshot };
+
+    } catch (error) {
+      Logger.error('Load state failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async deleteState(stateName = 'default') {
+    Logger.info(`Deleting state: "${stateName}"`);
+    const apiResult = await ApiStore.deleteState(stateName);
+    if (apiResult.success) {
+      Logger.info(`✓ State "${stateName}" deleted successfully`);
+      return { success: true };
+    } else {
+      Logger.error(`Failed to delete state: "${stateName}": ${apiResult.error}`);
+      return { success: false, error: apiResult.error };
+    }
+  },
+
+  listStates() {
+    Logger.info('Listing all saved states...');
+    const states = ApiStore.listStates(window.location.href);
+    Logger.info(`Found ${states.length} saved states`);
+    return states;
+  },
+
+  navigateAndRestore(stateName = 'default') {
+    Logger.info(`Navigate and restore: "${stateName}"`);
+
+    const snapshot = ApiStore.loadState(stateName, window.location.href);
+
+    if (!snapshot) {
+      Logger.error(`No saved state found with name: ${stateName}`);
+      return { success: false, error: 'State not found' };
+    }
+
+    const savedPageUrl = snapshot.metadata?.pageUrl;
+
+    if (!savedPageUrl) {
+      Logger.error('No page URL found in saved state');
+      return { success: false, error: 'No page URL in state' };
+    }
+
+    sessionStorage.setItem('applyFiltersOnLoad', 'true');
+    sessionStorage.setItem('tableau_restore_state', stateName);
+
+    Logger.info(`Navigating to: ${savedPageUrl}`);
+    window.location.href = savedPageUrl;
+
+    return { success: true, navigating: true };
+  },
+
+  /**
+   * Build a merged snapshot that combines the new view's filters with reset
+   * entries for any filters that are currently changed (vs. initial baseline)
+   * but NOT part of the new view. This prevents stale filters from a
+   * previously applied view from persisting when switching views.
+   */
+  async _buildMergedSnapshot(viz, viewSnapshot) {
+    if (!viewSnapshot) return viewSnapshot;
+
+    try {
+      const initialState = InitialStateManager.getCachedState();
+      if (!initialState) {
+        Logger.debug('[_buildMergedSnapshot] No initial baseline available — skipping stale filter reset');
+        return viewSnapshot;
+      }
+
+      // Capture what the dashboard looks like right now
+      let currentState;
+      try {
+        currentState = await FilterCapture.captureState(viz);
+      } catch (err) {
+        Logger.warn('[_buildMergedSnapshot] Could not capture current state for reset — applying view as-is:', err.message);
+        return viewSnapshot;
+      }
+
+      if (!currentState) return viewSnapshot;
+
+      const viewFilters    = viewSnapshot.filters    || {};
+      const viewParams     = viewSnapshot.parameters || {};
+      const initialFilters = initialState.filters    || {};
+      const initialParams  = initialState.parameters || {};
+      const currentFilters = currentState.filters    || {};
+      const currentParams  = currentState.parameters || {};
+
+      // Deep clone the view snapshot so we never mutate the stored data.
+      // Filters/parameters contain nested objects (values arrays, min/max)
+      // that a shallow Object.assign would share by reference.
+      var merged = {};
+      try {
+        merged.filters    = JSON.parse(JSON.stringify(viewFilters));
+        merged.parameters = JSON.parse(JSON.stringify(viewParams));
+      } catch (_) {
+        Logger.warn('[_buildMergedSnapshot] Deep clone failed — falling back to shallow copy');
+        merged.filters    = Object.assign({}, viewFilters);
+        merged.parameters = Object.assign({}, viewParams);
+      }
+      merged.metadata = viewSnapshot.metadata || null;
+
+      var resetCount = 0;
+
+      // For each filter that is currently different from initial and NOT in the
+      // new view, inject the initial value so restoreState resets it.
+      for (const filterName of Object.keys(currentFilters)) {
+        if (merged.filters[filterName]) continue; // new view handles this one
+
+        const currentVal = currentFilters[filterName];
+        const initialVal = initialFilters[filterName];
+
+        if (!initialVal) continue; // wasn't in baseline — leave it alone
+
+        try {
+          const same = FilterComparison._areFiltersEqual(currentVal, initialVal);
+          if (!same) {
+            Logger.debug('[_buildMergedSnapshot] Resetting stale filter: ' + filterName);
+            merged.filters[filterName] = JSON.parse(JSON.stringify(initialVal));
+            resetCount++;
+          }
+        } catch (cmpErr) {
+          // Comparison failed — safer to include the reset than to leave a stale filter
+          Logger.warn('[_buildMergedSnapshot] Comparison failed for filter "' + filterName + '", resetting to initial:', cmpErr.message);
+          try {
+            merged.filters[filterName] = JSON.parse(JSON.stringify(initialVal));
+          } catch (_) {
+            merged.filters[filterName] = initialVal;
+          }
+          resetCount++;
+        }
+      }
+
+      // Same for parameters
+      for (const paramName of Object.keys(currentParams)) {
+        if (merged.parameters[paramName]) continue;
+
+        const currentVal = currentParams[paramName];
+        const initialVal = initialParams[paramName];
+
+        if (!initialVal) continue;
+
+        var currentParamValue = currentVal  && currentVal.value  !== undefined ? currentVal.value  : null;
+        var initialParamValue = initialVal  && initialVal.value  !== undefined ? initialVal.value  : null;
+
+        if (currentParamValue !== initialParamValue) {
+          Logger.debug('[_buildMergedSnapshot] Resetting stale parameter: ' + paramName);
+          try {
+            merged.parameters[paramName] = JSON.parse(JSON.stringify(initialVal));
+          } catch (_) {
+            merged.parameters[paramName] = initialVal;
+          }
+          resetCount++;
+        }
+      }
+
+      if (resetCount > 0) {
+        Logger.info('[_buildMergedSnapshot] Injected ' + resetCount + ' reset(s) for stale filters/parameters from prior view');
+      }
+
+      return merged;
+
+    } catch (error) {
+      Logger.error('[_buildMergedSnapshot] Unexpected error — applying view as-is:', error.message);
+      return viewSnapshot;
+    }
+  },
+
+  /**
+   * Get the initial dashboard state for reference.
+   */
+  async getInitialState() {
+    return await InitialStateManager.getInitialState();
+  },
+
+  /**
+   * Reset the initial state (re-captures on next comparison).
+   */
+  resetInitialState() {
+    InitialStateManager.reset();
+  },
+
+  /**
+   * Marks a saved state as the default for the current page.
+   * Clears any previously set default first (both locally and in the DB).
+   */
+  async setDefaultState(stateName) {
+    Logger.info(`Setting default state: "${stateName}"`);
+    const pageUrl = window.location.href;
+    const apiResult = await ApiStore.setDefault(stateName, pageUrl);
+    if (!apiResult.success) {
+      Logger.warn(`[TableauFilterManager] DB set default failed: ${apiResult.error}`);
+    }
+    return { success: apiResult.success };
+  },
+
+  /**
+   * Removes the default state designation for the current page.
+   */
+  async clearDefaultState() {
+    Logger.info('Clearing default state');
+    const pageUrl = window.location.href;
+    const apiResult = await ApiStore.clearDefault(pageUrl);
+    if (!apiResult.success) {
+      Logger.warn(`[TableauFilterManager] DB clear default failed: ${apiResult.error}`);
+    }
+    return { success: apiResult.success };
+  },
+
+  /**
+   * Returns the name of the current default state for this page, or null.
+   */
+  getDefaultState() {
+    return ApiStore.getDefault(window.location.href);
+  }
+};
+
+// ====
+// UI CONTROLLER
+// ====
+const UIController = {
+  elements: {},
+  currentPreview: null,
+  currentDiff: null,  // Stores the current diff comparison result
+  _appliedStateName: null,  // Tracks which view is currently active (set on successful apply/restore)
+
+  init() {
+    this.elements = {
+      floatBtn: document.getElementById('tfmFloatBtn'),
+      modalOverlay: document.getElementById('tfmModalOverlay'),
+      closeBtn: document.getElementById('tfmCloseBtn'),
+      tabs: document.querySelectorAll('.tfm-tab'),
+      tabContents: document.querySelectorAll('.tfm-tab-content'),
+      stateName: document.getElementById('tfmStateName'),
+      saveBtn: document.getElementById('tfmSaveBtn'),
+      preview: document.getElementById('tfmPreview'),
+      previewContent: document.getElementById('tfmPreviewContent'),
+      statesList: document.getElementById('tfmStatesList'),
+      savedLoading: document.getElementById('tfmSavedLoading'),
+      notification: document.getElementById('tfmNotification'),
+      notificationTitle: document.getElementById('tfmNotificationTitle'),
+      notificationMessage: document.getElementById('tfmNotificationMessage'),
+      notificationProgress: document.getElementById('tfmNotificationProgress'),
+      notificationProgressBar: document.getElementById('tfmNotificationProgressBar'),
+      notificationDetails: document.getElementById('tfmNotificationDetails'),
+      modalNotification: document.getElementById('tfmModalNotification'),
+      modalNotificationIcon: document.getElementById('tfmModalNotificationIcon'),
+      modalNotificationTitle: document.getElementById('tfmModalNotificationTitle'),
+      modalNotificationMessage: document.getElementById('tfmModalNotificationMessage')
+    };
+    this._busy = false;
+    this._appliedStateName = null;
+
+    this._injectStyleOverrides();
+    this.bindEvents();
+    this.setupProgressListener();
+    Logger.info('UI Controller initialized');
+  },
+
+  /**
+   * Inject CSS overrides for font inheritance and disabled Apply button.
+   * Default-card colors live in the external CSS field.
+   * Idempotent — safe to call more than once.
+   */
+  _injectStyleOverrides() {
+    if (document.getElementById('tfm-style-overrides')) return;
+    try {
+      var style = document.createElement('style');
+      style.id = 'tfm-style-overrides';
+      style.textContent = [
+        '.tfm-modal, .tfm-modal *, .tfm-float-btn { font-family: inherit; }',
+        '.tfm-btn.tfm-btn-applied { opacity: 0.5; cursor: default; pointer-events: none; }',
+      ].join('\n');
+      (document.head || document.documentElement).appendChild(style);
+    } catch (err) {
+      Logger.warn('[UIController] Failed to inject style overrides:', err.message);
+    }
+  },
+
+  setupProgressListener() {
+    ProgressTracker.onProgress((data) => {
+      if (CONFIG.SHOW_PROGRESS_UI && this.elements.notificationProgress.classList.contains('active')) {
+        this.elements.notificationProgressBar.style.width = `${data.percentage}%`;
+        this.elements.notificationMessage.textContent = `${data.percentage}% - ${data.status}`;
+        this.elements.notificationDetails.textContent = `${data.current}/${data.total} operations`;
+      }
+    });
+  },
+
+  bindEvents() {
+    this.elements.floatBtn.addEventListener('click', () => this.openModal());
+    this.elements.closeBtn.addEventListener('click', () => this.closeModal());
+    this.elements.modalOverlay.addEventListener('click', (e) => {
+      if (e.target === this.elements.modalOverlay) {
+        this.closeModal();
+      }
+    });
+
+    this.elements.tabs.forEach(tab => {
+      tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+    });
+
+    this.elements.stateName.addEventListener('input', (e) => {
+      // Enable save button only if there's a name AND there are changes
+      const hasName = e.target.value.trim().length > 0;
+      const hasChanges = this.currentDiff && this.currentDiff.totalChangeCount > 0;
+      this.elements.saveBtn.disabled = !(hasName && hasChanges);
+    });
+
+    this.elements.saveBtn.addEventListener('click', () => this.handleSave());
+
+    this.elements.stateName.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !this.elements.saveBtn.disabled) {
+        this.handleSave();
+      }
+    });
+  },
+
+  async openModal() {
+    this.elements.modalOverlay.classList.add('active');
+    await this.loadPreview();
+
+    const activeTab = document.querySelector('.tfm-tab.active');
+    if (activeTab && activeTab.dataset.tab === 'saved') {
+      this.loadSavedStates();
+    }
+  },
+
+  closeModal() {
+    this.elements.modalOverlay.classList.remove('active');
+    this.elements.stateName.value = '';
+    this.elements.saveBtn.disabled = true;
+    this.setBusy(false);
+    this.hideModalNotification();
+  },
+
+  switchTab(tabName) {
+    this.elements.tabs.forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    this.elements.tabContents.forEach(content => {
+      content.classList.toggle('active', content.id === `tfm${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`);
+    });
+
+    if (tabName === 'saved') {
+      this.loadSavedStates();
+    } else if (tabName === 'save') {
+      this.loadPreview();
+    }
+  },
+
+  /**
+   * DIFF-BASED PREVIEW: Shows only filters/parameters that differ from Initial Dashboard State.
+   */
+  async loadPreview() {
+    const loadingEl = this.elements.preview.querySelector('.tfm-loading');
+    loadingEl.classList.add('active');
+    this.elements.previewContent.innerHTML = '';
+
+    try {
+      const viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+      await TableauViz.waitForInteractive(viz);
+    
+      // Capture current state
+      const currentSnapshot = await FilterCapture.captureState(viz);
+      this.currentPreview = currentSnapshot;
+    
+      // Get initial state and compare
+      const initialState = await InitialStateManager.getInitialState();
+      const diff = await FilterComparison.compare(currentSnapshot, initialState);
+      this.currentDiff = diff;
+
+      // If the initial state was never captured, block saving and show a clear error
+      if (diff.initialStateMissing) {
+        this.elements.previewContent.innerHTML = `
+          <div class="tfm-diff-summary tfm-no-changes">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Initial dashboard state unavailable.</strong><br>
+            Please reload the page and wait for the dashboard to fully load before saving.
+          </div>`;
+        this.elements.saveBtn.disabled = true;
+        return;
+      }
+
+      // Log the comparison result to verify async flow
+      Logger.info('[UIController] loadPreview: Comparison complete', {
+        filterChangeCount: diff.filterChangeCount,
+        parameterChangeCount: diff.parameterChangeCount,
+        totalChangeCount: diff.totalChangeCount
+      });
+      if (diff.changedFilterNames && diff.changedFilterNames.length) {
+        Logger.info('[UIController] Changed filters: ' + diff.changedFilterNames.join(', '));
+      }
+      if (diff.changedParameterNames && diff.changedParameterNames.length) {
+        Logger.info('[UIController] Changed parameters: ' + diff.changedParameterNames.join(', '));
+      }
+
+      // Render the diff-based preview
+      this.renderDiffPreview(diff, currentSnapshot);
+
+      // Update save button state based on whether there are changes
+      const hasName = this.elements.stateName.value.trim().length > 0;
+      this.elements.saveBtn.disabled = !(hasName && diff.totalChangeCount > 0);
+
+    } catch (error) {
+      Logger.error('Failed to load preview:', error);
+      this.elements.previewContent.innerHTML = `
+        <div class="tfm-preview-empty">
+          <i class="fas fa-exclamation-triangle"></i> Failed to load current state: ${error.message}
+        </div>
+      `;
+    } finally {
+      loadingEl.classList.remove('active');
+    }
+  },
+
+  /**
+   * Render the diff-based preview showing only changed items.
+   */
+  renderDiffPreview(diff, snapshot) {
+    let html = '';
+
+    // Log what we received for debugging
+    Logger.info('[UIController] renderDiffPreview received:', {
+      filterChangeCount: diff?.filterChangeCount,
+      parameterChangeCount: diff?.parameterChangeCount,
+      totalChangeCount: diff?.totalChangeCount,
+      hasChanges: diff?.hasChanges
+    });
+
+    // Defensive: warn if expected properties are missing (should not happen now with await fix)
+    if (diff && (diff.filterChangeCount === undefined || diff.parameterChangeCount === undefined)) {
+      Logger.warn('[UIController] renderDiffPreview: diff object missing expected count properties - this indicates an async timing issue', {
+        filterChangeCount: diff.filterChangeCount,
+        parameterChangeCount: diff.parameterChangeCount,
+        totalChangeCount: diff.totalChangeCount
+      });
+    }
+
+    // Diff summary banner
+    const totalChangeCount = (diff?.filterChangeCount ?? 0) + (diff?.parameterChangeCount ?? 0);
+    if (totalChangeCount === 0) {
+      html += `
+        <div class="tfm-diff-summary tfm-no-changes">
+          <i class="fas fa-info-circle"></i>
+          <strong>No changes from initial dashboard state.</strong><br>
+          Modify some settings, then return here to save your changes.
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="tfm-diff-summary">
+          <i class="fas fa-check-circle"></i>
+          <strong>Saving ${totalChangeCount} changed setting${totalChangeCount !== 1 ? 's' : ''}</strong>
+          that differ from the initial dashboard state.
+        </div>
+      `;
+    }
+
+    // Show all changed settings (filters + parameters merged), excluding UI-hidden names
+    var hiddenFilters = new Set();
+    var _hfArr = CONFIG.UI_HIDDEN_FILTERS || [];
+    var _hfi = _hfArr.length;
+    while (_hfi--) hiddenFilters.add(_hfArr[_hfi].toLowerCase());
+    var hiddenParameters = new Set();
+    var _hpArr = CONFIG.UI_HIDDEN_PARAMETERS || [];
+    var _hpi = _hpArr.length;
+    while (_hpi--) hiddenParameters.add(_hpArr[_hpi].toLowerCase());
+
+    // Log raw changed items (before UI-hidden filtering) to identify exact names/types
+    var _rawFilterKeys = Object.keys(diff.changedFilters || {});
+    var _rawParamKeys = Object.keys(diff.changedParameters || {});
+    Logger.info('[Changed Settings] RAW changed filters (' + _rawFilterKeys.length + '): ' + (_rawFilterKeys.join(', ') || '(none)'));
+    Logger.info('[Changed Settings] RAW changed parameters (' + _rawParamKeys.length + '): ' + (_rawParamKeys.join(', ') || '(none)'));
+    Logger.info('[Changed Settings] UI_HIDDEN_FILTERS: ' + (CONFIG.UI_HIDDEN_FILTERS || []).join(', ') || '(none)');
+    Logger.info('[Changed Settings] UI_HIDDEN_PARAMETERS: ' + (CONFIG.UI_HIDDEN_PARAMETERS || []).join(', ') || '(none)');
+
+    const allChangedSettings = [
+      ...Object.entries(diff.changedFilters || {})
+        .filter(([name]) => !hiddenFilters.has(name.toLowerCase()))
+        .map(([name, filter]) => {
+          let valueStr = '';
+          if (filter.type === 'categorical') {
+            if (filter.values === 'ALL') {
+              valueStr = '(All)';
+            } else {
+              valueStr = filter.values.length > 3
+                ? `${filter.values.slice(0, 3).join(', ')}... (+${filter.values.length - 3})`
+                : filter.values.join(', ');
+            }
+          } else if (filter.type === 'range') {
+            valueStr = `${filter.min ?? 'Null'} to ${filter.max ?? 'Null'}`;
+          }
+          return { name, valueStr };
+        }),
+      ...Object.entries(diff.changedParameters || {})
+        .filter(([name]) => !hiddenParameters.has(name.toLowerCase()))
+        .map(([name, param]) => ({
+          name,
+          valueStr: param.value
+        }))
+    ];
+
+    var _visNames = [];
+    var _vni = allChangedSettings.length;
+    while (_vni--) _visNames.push(allChangedSettings[_vni].name);
+    Logger.info('[Changed Settings] VISIBLE in modal (' + allChangedSettings.length + '): ' + (_visNames.join(', ') || '(none)'));
+
+    if (allChangedSettings.length > 0) {
+      html += '<div class="tfm-preview-section">';
+      html += `<div class="tfm-preview-section-title"><i class="fas fa-sliders-h"></i> Changed Settings (${allChangedSettings.length})</div>`;
+      for (const { name, valueStr } of allChangedSettings) {
+        html += `<div class="tfm-preview-item tfm-changed"><strong>${name}:</strong> ${valueStr}</div>`;
+      }
+      html += '</div>';
+    }
+
+    if (!html) {
+      html = '<div class="tfm-preview-empty">No filters or parameters found</div>';
+    }
+
+    this.elements.previewContent.innerHTML = html;
+  },
+
+  async handleSave() {
+    if (this._busy) return;
+    const stateName = this.elements.stateName.value.trim();
+
+    if (!stateName) {
+      this.showModalNotification('error', 'Error', 'Please enter a custom view name');
+      return;
+    }
+
+    if (!this.currentDiff || this.currentDiff.totalChangeCount === 0) {
+      this.showModalNotification('warning', 'No Changes', 'No changes from initial dashboard state to save.');
+      return;
+    }
+
+    this.setBusy(true);
+    this.elements.saveBtn.innerHTML = '<i class="fas fa-save"></i> Saving...';
+    this.showModalNotification('progress', 'Saving', `Saving "${stateName}"…`, false);
+
+    try {
+      const result = await TableauFilterManager.saveState(stateName);
+
+      if (result.success) {
+        const filterCount = result.snapshot.metadata?.filterChangeCount ?? 0;
+        const paramCount = result.snapshot.metadata?.parameterChangeCount ?? 0;
+        const totalSaved = filterCount + paramCount;
+        this.showModalNotification('success', 'Saved',
+          `"${stateName}" saved with ${totalSaved} changed setting${totalSaved !== 1 ? 's' : ''}`
+        );
+        this.elements.stateName.value = '';
+        setTimeout(() => { this.switchTab('saved'); }, 1000);
+      } else if (result.noChanges) {
+        this.showModalNotification('warning', 'No Changes', 'No changes from initial dashboard state to save.');
+      } else {
+        throw new Error(result.error || 'Failed to save state');
+      }
+
+    } catch (error) {
+      Logger.error('Save failed:', error);
+      this.showModalNotification('error', 'Error', error.message);
+    } finally {
+      this.setBusy(false);
+      this.elements.saveBtn.innerHTML = '<i class="fas fa-save"></i> Save View';
+      const hasName = this.elements.stateName.value.trim().length > 0;
+      const hasChanges = this.currentDiff && this.currentDiff.totalChangeCount > 0;
+      this.elements.saveBtn.disabled = !(hasName && hasChanges);
+    }
+  },
+
+  async loadSavedStates() {
+    this.elements.savedLoading.classList.add('active');
+    this.elements.statesList.innerHTML = '';
+
+    try {
+      const states = TableauFilterManager.listStates();
+
+      if (states.length === 0) {
+        this.elements.statesList.innerHTML = `
+          <div class="tfm-empty-state">
+            <div class="tfm-empty-icon"><i class="fas fa-inbox"></i></div>
+            <div class="tfm-empty-text">No saved custom views yet</div>
+            <div class="tfm-empty-subtext">Go to "Save Current View" tab to save your first custom view</div>
+          </div>
+        `;
+      } else {
+        const currentDefault = TableauFilterManager.getDefaultState();
+
+        // Sort: default view pinned to top, rest by descending date saved.
+        // Missing dates sort to the bottom (after all dated entries).
+        var sorted = states.slice().sort(function(a, b) {
+          var aDefault = a.name === currentDefault ? 1 : 0;
+          var bDefault = b.name === currentDefault ? 1 : 0;
+          if (aDefault !== bDefault) return bDefault - aDefault;
+          var aDate = (a.snapshot && a.snapshot.metadata && a.snapshot.metadata.capturedAt) || '';
+          var bDate = (b.snapshot && b.snapshot.metadata && b.snapshot.metadata.capturedAt) || '';
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return 1;   // a has no date → push to bottom
+          if (!bDate) return -1;  // b has no date → push to bottom
+          return bDate > aDate ? 1 : bDate < aDate ? -1 : 0;
+        });
+
+        sorted.forEach(state => {
+          this.renderStateCard(state, currentDefault);
+        });
+      }
+
+    } catch (error) {
+      Logger.error('Failed to load saved states:', error);
+      this.elements.statesList.innerHTML = `
+        <div class="tfm-empty-state">
+          <div class="tfm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="tfm-empty-text">Failed to load saved states</div>
+          <div class="tfm-empty-subtext">${error.message}</div>
+        </div>
+      `;
+    } finally {
+      this.elements.savedLoading.classList.remove('active');
+    }
+  },
+
+  /**
+   * Render a state card showing what the saved state will change.
+   */
+  renderStateCard(state, currentDefault) {
+    if (!state) return;
+    const { name, snapshot } = state;
+
+    if (!snapshot || !name) return;
+
+    const isDefault = name === currentDefault;
+    const filterCount = Object.keys(snapshot.filters || {}).length;
+    const paramCount = Object.keys(snapshot.parameters || {}).length;
+    const savedDate = snapshot.metadata?.capturedAt
+      ? new Date(snapshot.metadata.capturedAt).toLocaleString(undefined, {
+          year: 'numeric', month: 'numeric', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })
+      : 'Unknown';
+
+    const currentPageUrl = window.location.href;
+    const savedPageUrl = snapshot.metadata?.pageUrl;
+    const isDifferentPage = savedPageUrl && savedPageUrl !== currentPageUrl;
+
+    const card = document.createElement('div');
+    card.className = `tfm-state-card${isDefault ? ' tfm-state-card-default' : ''}`;
+
+    // Build merged settings list (filters + parameters), excluding UI-hidden names.
+    // Use pipe-delimited strings for lookup to avoid while-loop subscripts that
+    // confuse the no-extension JSX parser.
+    var _scHFStr = '|' + (CONFIG.UI_HIDDEN_FILTERS || []).join('|').toLowerCase() + '|';
+    var _scHPStr = '|' + (CONFIG.UI_HIDDEN_PARAMETERS || []).join('|').toLowerCase() + '|';
+
+    const allSettings = [
+      ...Object.entries(snapshot.filters || {})
+        .filter(([name]) => _scHFStr.indexOf('|' + name.toLowerCase() + '|') === -1)
+        .map(([name, filter]) => {
+          let valueStr = '';
+          if (filter.type === 'categorical') {
+            valueStr = filter.values === 'ALL' ? '(All)' : (filter.values.length > 3
+              ? `${filter.values.slice(0, 3).join(', ')}... (+${filter.values.length - 3})`
+              : filter.values.join(', '));
+          } else if (filter.type === 'range') {
+            valueStr = `${filter.min ?? 'Null'} to ${filter.max ?? 'Null'}`;
+          }
+          return { name, valueStr };
+        }),
+      ...Object.entries(snapshot.parameters || {})
+        .filter(([name]) => _scHPStr.indexOf('|' + name.toLowerCase() + '|') === -1)
+        .map(([name, param]) => ({
+          name,
+          valueStr: param.value
+        }))
+    ];
+    const totalSettings = allSettings.length;
+    const displaySettings = allSettings.slice(0, 5);
+    const overflow = totalSettings - displaySettings.length;
+
+    let settingsHtml = displaySettings.map(s =>
+      `<div class="tfm-preview-item tfm-changed"><strong>${s.name}:</strong> ${s.valueStr}</div>`
+    ).join('');
+    if (overflow > 0) {
+      settingsHtml += `<div class="tfm-preview-item" style="color:#999;font-style:italic">+${overflow} more setting${overflow !== 1 ? 's' : ''}</div>`;
+    }
+
+    let html = `
+      <div class="tfm-state-header">
+        <div>
+          <h3 class="tfm-state-name">
+            ${name}
+            ${isDefault ? '<span class="tfm-default-badge"><i class="fas fa-star"></i> Default</span>' : ''}
+          </h3>
+          <div class="tfm-state-meta">Saved: ${savedDate}</div>
+        </div>
+      </div>
+
+      <div class="tfm-preview-section" style="margin-bottom:12px">
+        <div class="tfm-preview-section-title"><i class="fas fa-sliders-h"></i> Changed Settings (${totalSettings})</div>
+        ${settingsHtml || '<div class="tfm-preview-empty">No changes recorded</div>'}
+      </div>
+    `;
+
+    if (snapshot.metadata?.user) {
+      html += `
+        <div class="tfm-state-info">
+          <div class="tfm-state-info-item">
+            <i class="fas fa-user"></i> ${snapshot.metadata.user.fullname}
+          </div>
+        </div>
+      `;
+    }
+
+    if (isDifferentPage) {
+      html += `
+        <div class="tfm-state-warning">
+          <i class="fas fa-exclamation-triangle"></i> This state was saved from a different page
+        </div>
+      `;
+    }
+
+    const isApplied = this._appliedStateName === name;
+
+    html += '<div class="tfm-state-actions">';
+
+    if (!isDifferentPage) {
+      if (isApplied) {
+        html += `
+          <button class="tfm-btn tfm-btn-primary tfm-btn-small tfm-btn-applied" disabled>
+            <i class="fas fa-check"></i> Applied
+          </button>
+        `;
+      } else {
+        html += `
+          <button class="tfm-btn tfm-btn-primary tfm-btn-small" onclick="UIController.applyState('${name}')">
+            <i class="fas fa-check"></i> Apply View
+          </button>
+        `;
+      }
+    } else {
+      html += `
+        <button class="tfm-btn tfm-btn-primary tfm-btn-small" onclick="UIController.navigateAndApply('${name}')">
+          <i class="fas fa-external-link-alt"></i> Go to Page & Apply
+        </button>
+      `;
+    }
+
+    if (isDefault) {
+      html += `
+        <button class="tfm-btn tfm-btn-default-active tfm-btn-small" onclick="UIController.clearDefaultState()">
+          <i class="fas fa-star"></i> Remove Default
+        </button>
+      `;
+    } else {
+      html += `
+        <button class="tfm-btn tfm-btn-default tfm-btn-small" onclick="UIController.setDefaultState('${name}')">
+          <i class="far fa-star"></i> Set as Default
+        </button>
+      `;
+    }
+
+    html += `
+      <button class="tfm-btn tfm-btn-danger tfm-btn-small" onclick="UIController.deleteState('${name}')">
+        <i class="fas fa-trash-alt"></i> Delete
+      </button>
+    `;
+
+    html += '</div>';
+
+    card.innerHTML = html;
+    this.elements.statesList.appendChild(card);
+  },
+
+  async applyState(stateName) {
+    if (this._busy) return;
+    this.setBusy(true);
+    this.showModalNotification('progress', 'Applying', `Applying "${stateName}"…`, false);
+
+    try {
+      const result = await TableauFilterManager.loadState(stateName);
+
+      if (result && result.success) {
+        this._appliedStateName = stateName;
+        const stats = result.results || {};
+        var fApplied = stats.filtersApplied    || 0;
+        var pApplied = stats.parametersApplied || 0;
+        var skipped  = (stats.filtersSkipped   || 0) + (stats.parametersSkipped || 0);
+        this.showModalNotification('success', 'Applied',
+          fApplied + ' filter' + (fApplied !== 1 ? 's' : '') + ', ' +
+          pApplied + ' parameter' + (pApplied !== 1 ? 's' : '') +
+          (skipped > 0 ? ' (' + skipped + ' already matched)' : '')
+        );
+        this.loadSavedStates(); // refresh cards so the applied button grays out
+        setTimeout(() => { this.closeModal(); }, 1200);
+      } else {
+        throw new Error((result && result.error) || 'Failed to apply state');
+      }
+
+    } catch (error) {
+      Logger.error('Apply failed:', error);
+      this.showModalNotification('error', 'Error', error.message || 'Unknown error');
+    } finally {
+      this.setBusy(false);
+    }
+  },
+
+  navigateAndApply(stateName) {
+    TableauFilterManager.navigateAndRestore(stateName);
+  },
+
+  viewState(stateName) {
+    const snapshot = ApiStore.loadState(stateName, window.location.href);
+    if (snapshot) {
+      console.log(`=== STATE: ${stateName} (DIFF-BASED) ===`);
+      console.log('Changed Filters:', Object.keys(snapshot.filters || {}));
+      console.log('Changed Parameters:', Object.keys(snapshot.parameters || {}));
+      console.log('Full snapshot:', JSON.stringify(snapshot, null, 2));
+      this.showNotification('success', 'View State', 'State details logged to console (F12)');
+    }
+  },
+
+  async setDefaultState(stateName) {
+    if (this._busy) return;
+    this.setBusy(true);
+    this.showModalNotification('progress', 'Saving', 'Updating default…', false);
+    try {
+      await TableauFilterManager.setDefaultState(stateName);
+      this.showModalNotification('success', 'Default Set', `"${stateName}" will auto-load on this page`);
+      this.loadSavedStates();
+    } catch (error) {
+      this.showModalNotification('error', 'Error', error.message);
+    } finally {
+      this.setBusy(false);
+    }
+  },
+
+  async clearDefaultState() {
+    if (this._busy) return;
+    this.setBusy(true);
+    this.showModalNotification('progress', 'Saving', 'Removing default…', false);
+    try {
+      await TableauFilterManager.clearDefaultState();
+      this.showModalNotification('success', 'Default Removed', 'No state will auto-load on this page');
+      this.loadSavedStates();
+    } catch (error) {
+      this.showModalNotification('error', 'Error', error.message);
+    } finally {
+      this.setBusy(false);
+    }
+  },
+
+  async deleteState(stateName) {
+    if (this._busy) return;
+    if (!confirm(`Are you sure you want to delete the custom view "${stateName}"?`)) {
+      return;
+    }
+
+    this.setBusy(true);
+    this.showModalNotification('progress', 'Deleting', `Deleting "${stateName}"…`, false);
+
+    try {
+      const currentDefault = TableauFilterManager.getDefaultState();
+      if (currentDefault === stateName) {
+        await TableauFilterManager.clearDefaultState();
+      }
+
+      const result = await TableauFilterManager.deleteState(stateName);
+
+      if (result && result.success) {
+        if (this._appliedStateName === stateName) {
+          this._appliedStateName = null;
+        }
+        this.showModalNotification('success', 'Deleted', `"${stateName}" deleted successfully`);
+        this.loadSavedStates();
+      } else {
+        this.showModalNotification('error', 'Error', 'Failed to delete state');
+      }
+    } catch (error) {
+      this.showModalNotification('error', 'Error', error.message);
+    } finally {
+      this.setBusy(false);
+    }
+  },
+
+  showModalNotification(type, title, message, autoHide = true) {
+    const icons = {
+      success:  'fa-solid fa-check',
+      error:    'fa-solid fa-xmark',
+      warning:  'fa-solid fa-triangle-exclamation',
+      progress: 'fa-solid fa-spinner fa-spin'
+    };
+    const el = this.elements.modalNotification;
+    el.className = `tfm-modal-notification ${type} active`;
+    this.elements.modalNotificationIcon.className = icons[type] || icons.success;
+    this.elements.modalNotificationTitle.textContent = title ? title + ' — ' : '';
+    this.elements.modalNotificationMessage.textContent = message;
+    if (this._modalNotifTimer) clearTimeout(this._modalNotifTimer);
+    if (autoHide && type !== 'progress') {
+      this._modalNotifTimer = setTimeout(() => { el.classList.remove('active'); }, 3500);
+    }
+  },
+
+  hideModalNotification() {
+    if (this._modalNotifTimer) clearTimeout(this._modalNotifTimer);
+    this.elements.modalNotification.classList.remove('active');
+  },
+
+  setBusy(busy) {
+    this._busy = busy;
+    // Grey out / restore card buttons
+    this.elements.statesList.classList.toggle('tfm-states-busy', busy);
+    // Disable / restore tabs
+    this.elements.tabs.forEach(tab => tab.classList.toggle('tfm-tab-disabled', busy));
+    // Save button is handled per-action, but keep it disabled while busy
+    if (busy) this.elements.saveBtn.disabled = true;
+  },
+
+  showNotification(type, title, message) {
+    this.elements.notification.className = `tfm-notification ${type} active`;
+    this.elements.notificationTitle.textContent = title;
+    this.elements.notificationMessage.textContent = message;
+    this.elements.notificationProgress.classList.remove('active');
+    this.elements.notificationDetails.textContent = '';
+
+    const icons = {
+      success:  '<i class="fa-solid fa-check"></i>',
+      error:    '<i class="fa-solid fa-xmark"></i>',
+      warning:  '<i class="fa-solid fa-triangle-exclamation"></i>',
+      progress: '<i class="fa-solid fa-spinner fa-spin"></i>'
+    };
+    this.elements.notification.querySelector('.tfm-notification-icon').innerHTML = icons[type] || icons.success;
+
+    if (type !== 'warning' && type !== 'progress') {
+      setTimeout(() => {
+        this.elements.notification.classList.remove('active');
+      }, 3000);
+    }
+  },
+
+  showProgressNotification(title, message) {
+    this.elements.notification.className = 'tfm-notification progress active';
+    this.elements.notificationTitle.textContent = title;
+    this.elements.notificationMessage.textContent = message;
+    this.elements.notification.querySelector('.tfm-notification-icon').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    this.elements.notificationProgress.classList.add('active');
+    this.elements.notificationProgressBar.style.width = '0%';
+    this.elements.notificationDetails.textContent = 'Starting...';
+  },
+
+  hideProgressNotification() {
+    this.elements.notificationProgress.classList.remove('active');
+  }
+};
+
+// ====
+// AUTO-RESTORE ON PAGE LOAD
+// Order: session flag → favorite flag → normal load
+// ====
+async function autoRestoreOnLoad() {
+  Logger.info('Auto-restore: Checking for states to apply...');
+
+  // STEP 1: Wait for Tableau viz to be interactive ONCE.
+  // We keep a reference to `viz` and pass it directly to the restore calls
+  // below so we never call getViz() / waitForInteractive() a second time.
+  // Doing so risks awaiting onFirstInteractive after it has already fired,
+  // which (depending on the Tableau API version) may never resolve again
+  // and would silently hang until the 30-second timeout.
+  let viz;
+  try {
+    Logger.info('Auto-restore: Waiting for Tableau viz to be interactive...');
+    viz = await TableauViz.getViz(CONFIG.VIZ_ID);
+    await TableauViz.waitForInteractive(viz);
+    Logger.info('Auto-restore: Viz is interactive, proceeding with state checks');
+  } catch (error) {
+    Logger.error('Auto-restore: Failed to get interactive viz:', error);
+    InitialStateManager._lockBaseline(); // Lock even on failure so getInitialState() doesn't retry
+    return;
+  }
+
+  // STEP 1b: Ensure the initial (unfiltered) baseline state is captured BEFORE
+  // any defaults are applied. If the capture at page-load already succeeded,
+  // this is a no-op. If it failed (workbook wasn't ready right after
+  // onFirstInteractive), we retry NOW while the viz is fully stable.
+  if (!InitialStateManager.hasInitialState()) {
+    Logger.info('Auto-restore: Initial state not yet captured — retrying before applying defaults...');
+    await InitialStateManager.captureInitialState();
+    if (InitialStateManager.hasInitialState()) {
+      Logger.info('Auto-restore: Initial state captured on retry.');
+    } else {
+      Logger.warn('Auto-restore: Initial state capture retry failed — diff comparison will be unavailable.');
+    }
+  }
+
+  // Peek at session/default flags now so the lock decision can account for them.
+  // Session items are only removed later, when they are actually applied.
+  const shouldApplyFilters = sessionStorage.getItem('applyFiltersOnLoad') === 'true';
+  const restoreStateName = sessionStorage.getItem('tableau_restore_state');
+  const currentPageUrl = window.location.href;
+  const defaultStateName = ApiStore.getDefault(currentPageUrl);
+
+  // Conditionally lock the baseline before any default filters are applied.
+  // - If initial state was captured: always lock so nothing overwrites it.
+  // - If initial state is null but defaults WILL be applied: lock anyway —
+  //   applying defaults changes the viz, so a post-default lazy capture would
+  //   give a wrong baseline.
+  // - If initial state is null AND no defaults will be applied: leave unlocked
+  //   so loadPreview() can do a lazy capture before the user changes anything.
+  const willApplyDefault = (shouldApplyFilters && !!restoreStateName) || !!defaultStateName;
+  if (InitialStateManager.hasInitialState() || willApplyDefault) {
+    InitialStateManager._lockBaseline();
+  }
+
+  // STEP 2: Check for session flag first (highest priority)
+
+  if (shouldApplyFilters && restoreStateName) {
+    Logger.info(`Auto-restore: Session flag found - applying state "${restoreStateName}"`);
+
+    sessionStorage.removeItem('applyFiltersOnLoad');
+    sessionStorage.removeItem('tableau_restore_state');
+
+    UIController.showProgressNotification('Auto-Restoring', `Applying state "${restoreStateName}"...`);
+
+    try {
+      const snapshot = ApiStore.loadState(restoreStateName, currentPageUrl);
+      if (!snapshot) throw new Error(`No saved state found: ${restoreStateName}`);
+      // Use the already-verified viz directly — no redundant interactive check.
+      const results = await FilterRestore.restoreState(viz, snapshot);
+      UIController.hideProgressNotification();
+      if (results && results.success) {
+        UIController._appliedStateName = restoreStateName;
+        UIController.showNotification('success', 'Auto-Restored', `State "${restoreStateName}" has been restored`);
+      } else {
+        var errMsg = (results && results.errors && results.errors[0]) || 'Unknown error';
+        UIController.showNotification('error', 'Auto-Restore Failed', errMsg);
+      }
+    } catch (error) {
+      UIController.hideProgressNotification();
+      UIController.showNotification('error', 'Auto-Restore Failed', error.message || 'Unknown error');
+    }
+    return; // Exit after applying session state
+  }
+
+  // STEP 3: Check for a user-designated default saved filter
+  if (defaultStateName) {
+    Logger.info(`Auto-restore: Default state found - applying "${defaultStateName}"`);
+
+    const snapshot = ApiStore.loadState(defaultStateName, currentPageUrl);
+    if (snapshot) {
+      UIController.showProgressNotification('Loading Default State', `Applying "${defaultStateName}"...`);
+
+      try {
+        // Use the already-verified viz directly — no redundant interactive check.
+        const results = await FilterRestore.restoreState(viz, snapshot);
+        UIController.hideProgressNotification();
+        if (results && results.success) {
+          UIController._appliedStateName = defaultStateName;
+          UIController.showNotification('success', 'Default Loaded', `Default state "${defaultStateName}" has been applied`);
+        } else {
+          var errMsg = (results && results.errors && results.errors[0]) || 'Unknown error';
+          UIController.showNotification('error', 'Default Load Failed', errMsg);
+        }
+      } catch (error) {
+        UIController.hideProgressNotification();
+        UIController.showNotification('error', 'Default Load Failed', error.message || 'Unknown error');
+      }
+      return;
+    } else {
+      // State was deleted without clearing the default – clean up the stale reference
+      Logger.warn(`Auto-restore: Default state "${defaultStateName}" not found in currentBlock.data – clearing stale reference`);
+      await ApiStore.clearDefault(currentPageUrl);
+    }
+  }
+
+  // STEP 4: Normal load (no session flag, no default state)
+  Logger.info('Auto-restore: No session flag or default state found - loading dashboard normally');
+}
+
+// ====
+// EXPOSE TO WINDOW
+// ====
+window.TableauFilterManager = TableauFilterManager;
+window.UIController = UIController;
+window.TFM_CONFIG = CONFIG;
+window.FilterComparison = FilterComparison;
+window.InitialStateManager = InitialStateManager;
+window.ApiStore = ApiStore;
+
+// ====
+// INITIALIZATION
+// ====
+(async () => {
+  Logger.separator();
+  Logger.info('TABLEAU FILTER MANAGER (DIFF-BASED) INITIALIZED');
+  Logger.info(`Log Level: ${CONFIG.LOG_LEVEL}`);
+  Logger.info(`Debug Mode: ${CONFIG.DEBUG_MODE} (toggle with window.TFM_DEBUG(true/false))`);
+  Logger.info(`Batch Size: ${CONFIG.BATCH_SIZE}`);
+  Logger.info(`Auto-Restore: ${CONFIG.AUTO_RESTORE_ON_LOAD}`);
+
+  try {
+    ZPortalUtil.initializeVizConfig();
+    Logger.info(`Active Viz ID: ${CONFIG.VIZ_ID}`);
+  } catch (err) {
+    Logger.error('Tableau Filter Manager failed to initialize:', err.message);
+    alert(`Tableau Filter Manager failed to initialize: ${err.message}`);
+    return;
+  }
+  Logger.separator();
+
+  UIController.init();
+  document.getElementById('tfmFloatBtn').removeAttribute('style');
+
+  // Snapshot currentBlock.data immediately while it's in scope and populated
+  ApiStore.cacheBlockData();
+
+  // Capture initial dashboard state after a short delay to ensure viz is fully loaded
+  Logger.info('Capturing Initial Dashboard State for diff-based comparison...');
+  await TableauViz.sleep(2000);
+  await InitialStateManager.captureInitialState();
+  await InitialStateManager.captureInitialState();
+  logInitialStateValues(InitialStateManager.getCachedState());
+
+  await autoRestoreOnLoad();
+  Logger.info('Ready to use!');
+  Logger.info('Access via: window.TableauFilterManager');
+  Logger.info('Enable debug mode: window.TFM_DEBUG(true)');
+  Logger.info('View initial state: window.InitialStateManager.getInitialState()');
+  Logger.separator();
+})();
+</script>

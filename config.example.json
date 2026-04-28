@@ -1,0 +1,62 @@
+{
+  "portal": {
+    "url": "https://your-portal.zuarbase.net/",
+    "apiKey": "your-portal-api-key",
+    "userId": "00000000-0000-0000-0000-000000000000"
+  },
+  "github": {
+    "token": "ghp_your_github_personal_access_token",
+    "owner": "your-github-username",
+    "repo": "zportal-blocks",
+    "branch": "main"
+  },
+  "anthropic": {
+    "apiKey": "sk-ant-your-anthropic-key",
+    "model": "claude-sonnet-4-6"
+  },
+  "custom_rules": [
+    {
+      "text": "Always use optional chaining when reading currentBlock: currentBlock?.data?.columns, currentBlock?.data?.data. Never assume the data is populated.",
+      "enabled": true
+    },
+    {
+      "text": "Rows in currentBlock.data.data are positional arrays, not objects. Always use cols.indexOf('column_name') to get values — never row.column_name.",
+      "enabled": true
+    },
+    {
+      "text": "Never load amCharts scripts directly in a chart block. Always wrap all am5 code in window.AMCHARTS_LOADER.load().then(function() {...}).",
+      "enabled": true
+    },
+    {
+      "text": "Always dispose of the amCharts root before re-rendering: if (root) root.dispose(); at the top of the render function to prevent ghost charts stacking on filter changes.",
+      "enabled": true
+    },
+    {
+      "text": "When the block's query uses group_by, the data is already aggregated. Do not attempt to re-aggregate it in JavaScript.",
+      "enabled": true
+    },
+    {
+      "text": "Add a const DEBUG = true flag at the top of every block. Wrap all console.log calls in if (DEBUG) {...} so debugging can be toggled off without removing log statements.",
+      "enabled": true
+    },
+    {
+      "text": "Always use CSS variables (--color-primary, --color-text, --body-bg-color, --color-success, --color-danger) instead of hardcoded colors.",
+      "enabled": true
+    },
+    {
+      "text": "Always give chart container divs unique IDs (chartdiv-1, chartdiv-2, etc.)",
+      "enabled": true
+    },
+    {
+      "text": "Always add a visible error message in the block UI if data fails to load — never fail silently.",
+      "enabled": true
+    }
+  ],
+  "skills": {
+    "amcharts5": true,
+    "currentBlock-instruction-set": true,
+    "currentblock": true,
+    "rest-api": true,
+    "zportal": true
+  }
+}

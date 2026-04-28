@@ -1,0 +1,3000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>zPortal Block Builder</title>
+
+<!-- Monaco Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:#0d0f18; --surface:#13151f; --surface2:#1a1d2e; --surface3:#1f2235;
+  --border:#252840; --border2:#2e3355;
+  --primary:#00d4aa; --primary-dim:#00a882; --primary-bg:#00d4aa18;
+  --accent:#7c6af7; --accent-dim:#5a49d4;
+  --text:#c8cde8; --text-dim:#616a9a; --text-bright:#eef0ff;
+  --green:#3dd68c; --green-bg:#0f2e1f;
+  --red:#f26b6b; --red-bg:#2e0f0f;
+  --yellow:#f0c040; --yellow-bg:#2a2008;
+  --radius:7px; --radius-lg:12px;
+  --font-ui:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'Cascadia Code','Fira Code','JetBrains Mono','Courier New',monospace;
+  --topbar-h:52px; --sidebar-w:270px;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:flex;flex-direction:column;font-size:14px;line-height:1.5}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+
+/* ── Topbar ── */
+#topbar{height:var(--topbar-h);min-height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 16px;flex-shrink:0;z-index:10}
+#topbar h1{font-size:14px;font-weight:700;letter-spacing:.5px;color:var(--primary);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo{width:22px;height:22px;background:var(--primary);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--bg);font-weight:900}
+#conn-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;letter-spacing:.3px;transition:all .2s}
+#conn-pill.connected{background:var(--green-bg);color:var(--green);border:1px solid #1a4a30}
+#conn-pill.disconnected{background:var(--red-bg);color:var(--red);border:1px solid #4a1a1a}
+.spacer{flex:1}
+.topbar-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim);padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:var(--font-ui);transition:all .15s;white-space:nowrap}
+.topbar-btn:hover{color:var(--text-bright);border-color:var(--primary)}
+
+/* ── Layout ── */
+#main{flex:1;display:flex;overflow:hidden}
+
+/* ── Sidebar ── */
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#sidebar-top{padding:12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.sidebar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+#search-wrap{position:relative}
+#search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px;pointer-events:none}
+#search-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:7px 10px 7px 28px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);transition:border-color .15s}
+#search-input:focus{outline:none;border-color:var(--primary)}
+#search-input::placeholder{color:var(--text-dim)}
+.sidebar-meta{display:flex;align-items:center;justify-content:space-between}
+#block-count{font-size:11px;color:var(--text-dim)}
+.icon-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:3px 6px;border-radius:4px;font-family:var(--font-ui);transition:color .15s}
+.icon-btn:hover{color:var(--primary)}
+
+/* ── Block type filter pills ── */
+#type-filter-bar{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.type-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;cursor:pointer;border:1px solid var(--border2);color:var(--text-dim);background:var(--bg);transition:all .15s;letter-spacing:.2px;text-transform:uppercase}
+.type-pill:hover{border-color:var(--primary);color:var(--primary)}
+.type-pill.active{background:var(--primary-bg);border-color:var(--primary);color:var(--primary)}
+
+#block-list{flex:1;overflow-y:auto;padding:6px}
+.block-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-dim);border:1px solid transparent;transition:all .12s;margin-bottom:1px}
+.block-item:hover{background:var(--surface2);color:var(--text)}
+.block-item.active{background:var(--primary-bg);color:var(--primary);border-color:#00d4aa28}
+.bi-dot{font-size:18px;line-height:1;opacity:.4;flex-shrink:0}
+.bi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bi-type{font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--surface3);color:var(--text-dim);flex-shrink:0}
+#sidebar-footer{padding:10px;border-top:1px solid var(--border)}
+#btn-new-block{width:100%;background:var(--primary-bg);border:1px dashed var(--primary-dim);color:var(--primary);padding:9px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font-ui);transition:all .15s;letter-spacing:.2px}
+#btn-new-block:hover{background:#00d4aa28;border-style:solid}
+
+/* ── Content ── */
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── Empty state ── */
+#empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--text-dim)}
+.es-icon{width:56px;height:56px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:24px}
+
+/* ── Editor container ── */
+#editor-container{display:none;flex:1;flex-direction:column;overflow:hidden}
+
+/* Action bar */
+#action-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+#block-name-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text-bright);padding:7px 12px;border-radius:var(--radius);font-size:14px;font-weight:500;font-family:var(--font-ui);transition:border-color .15s;min-width:0}
+#block-name-input:focus{outline:none;border-color:var(--primary)}
+#block-name-input::placeholder{color:var(--text-dim);font-weight:400}
+#save-status{font-size:12px;white-space:nowrap;padding:0 4px;transition:color .2s}
+#save-status.unsaved{color:var(--yellow)}
+#save-status.saved{color:var(--green)}
+#save-status.saving{color:var(--text-dim)}
+#save-status.error{color:var(--red)}
+
+.action-btn{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text-dim);cursor:pointer;font-size:13px;font-family:var(--font-ui);white-space:nowrap;transition:all .15s}
+.action-btn:hover{color:var(--text-bright);border-color:var(--text-dim)}
+.action-btn.danger:hover{color:var(--red);border-color:var(--red)}
+.action-btn.primary{background:var(--primary);border-color:var(--primary);color:var(--bg);font-weight:600}
+.action-btn.primary:hover{background:var(--primary-dim);border-color:var(--primary-dim)}
+.action-btn.primary:disabled{background:#1a4a40;border-color:#1a4a40;color:#3a8a78;cursor:not-allowed}
+.action-btn.ai-btn{background:var(--primary-bg);border-color:var(--primary-dim);color:var(--primary);font-weight:500}
+.action-btn.ai-btn:hover{background:#00d4aa28}
+.action-btn.ai-btn.active-ai{background:var(--primary);color:var(--bg)}
+
+/* ── View area ── */
+#view-area{flex:1;display:flex;overflow:hidden;position:relative}
+
+/* Code view */
+#code-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:9px 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer;font-size:13px;font-family:var(--font-ui);transition:all .15s}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* Monaco container */
+#monaco-html-wrap,#monaco-css-wrap{flex:1;overflow:hidden;display:none;min-height:0}
+#monaco-html-wrap.active,#monaco-css-wrap.active{display:flex;flex-direction:column}
+
+/* AI view */
+#ai-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
+#ai-view.active{display:flex}
+#ai-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+#ai-toolbar-label{font-size:12px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.8px;flex:1}
+.ai-tool-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font-ui);transition:all .15s}
+.ai-tool-btn:hover{color:var(--text-bright);border-color:var(--text-dim)}
+.ai-tool-btn.back{color:var(--primary);border-color:var(--primary-dim)}
+.ai-tool-btn.back:hover{background:var(--primary-bg)}
+
+/* Chat */
+#chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-msg{display:flex;gap:10px;max-width:88%;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.user{align-self:flex-end;flex-direction:row-reverse}
+.chat-msg.ai{align-self:flex-start}
+.msg-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px}
+.chat-msg.user .msg-avatar{background:var(--accent-dim);color:#fff}
+.chat-msg.ai   .msg-avatar{background:var(--primary-bg);border:1px solid var(--primary-dim);color:var(--primary)}
+.msg-bubble{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.6;max-width:100%;word-break:break-word}
+.chat-msg.user .msg-bubble{background:var(--accent-dim);color:#e8e4ff;border-bottom-right-radius:3px}
+.chat-msg.ai   .msg-bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg-bubble pre{background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:10px 12px;margin:8px 0;overflow-x:auto;font-family:var(--font-mono);font-size:12px;line-height:1.5}
+.msg-bubble code{font-family:var(--font-mono);font-size:12px}
+.msg-bubble p+p{margin-top:8px}
+.msg-thinking{display:flex;gap:5px;align-items:center;padding:12px 14px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:.4;animation:pulse 1.2s ease infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+
+#chat-input-area{padding:12px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+#chat-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);resize:none;min-height:42px;max-height:140px;line-height:1.5;transition:border-color .15s;overflow-y:auto}
+#chat-input:focus{outline:none;border-color:var(--primary)}
+#chat-input::placeholder{color:var(--text-dim)}
+#btn-send{background:var(--primary);border:none;color:var(--bg);width:38px;height:38px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+#btn-send:hover{background:var(--primary-dim)}
+#btn-send:disabled{background:#1a4a40;cursor:not-allowed;color:#3a8a78}
+
+/* ── Data preview panel ── */
+#data-preview{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:none}
+#data-preview.has-data{display:block}
+#data-preview-header{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}
+#data-preview-header:hover{background:var(--surface2)}
+#data-preview-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--primary);flex:1}
+#data-preview-meta{font-size:11px;color:var(--text-dim)}
+#data-preview-toggle{font-size:11px;color:var(--text-dim);transition:transform .15s}
+#data-preview-toggle.open{transform:rotate(180deg)}
+#data-preview-body{display:none;overflow-x:auto;max-height:180px;overflow-y:auto;border-top:1px solid var(--border)}
+#data-preview-body.open{display:block}
+.dp-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-mono)}
+.dp-table th{padding:5px 10px;text-align:left;color:var(--primary);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.dp-table td{padding:4px 10px;color:var(--text-dim);white-space:nowrap;border-bottom:1px solid var(--border)}
+.dp-table tr:last-child td{border-bottom:none}
+.dp-table tr:hover td{background:var(--surface2);color:var(--text)}
+
+/* ── GitHub history panel ── */
+#gh-history-panel{flex-shrink:0;border-top:1px solid var(--border);background:var(--surface);display:none;flex-direction:column;max-height:220px}
+#gh-history-panel.open{display:flex}
+#gh-history-header{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+#gh-history-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);flex:1}
+#gh-history-body{overflow-y:auto;flex:1}
+.gh-commit-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;transition:background .1s}
+.gh-commit-row:last-child{border-bottom:none}
+.gh-commit-row:hover{background:var(--surface2)}
+.gh-commit-sha{font-family:var(--font-mono);font-size:10px;color:var(--primary);width:56px;flex-shrink:0}
+.gh-commit-info{flex:1;min-width:0}
+.gh-commit-msg{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gh-commit-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:1px}
+.gh-commit-actions{display:flex;gap:5px;flex-shrink:0}
+.gh-latest{font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;background:var(--green-bg);color:var(--green);border:1px solid #1a4a30;margin-left:4px}
+
+/* Push modal status */
+.push-status{font-size:12px;padding:8px 12px;border-radius:var(--radius);font-family:var(--font-mono);margin-top:8px}
+.push-status.info{background:var(--surface3);color:var(--text-dim);border:1px solid var(--border2)}
+.push-status.ok{background:var(--green-bg);color:var(--green);border:1px solid #1a4a30}
+.push-status.error{background:var(--red-bg);color:var(--red);border:1px solid #4a1a1a}
+
+/* Diff view in restore modal */
+.diff-view{font-family:var(--font-mono);font-size:11px;line-height:1.7;border:1px solid var(--border2);border-radius:var(--radius);overflow:auto;max-height:240px;background:var(--bg)}
+.diff-line-ctx{padding:0 12px;color:var(--text-dim)}
+.diff-line-add{padding:0 12px;color:#6ee7a0;background:#0f2e1f}
+.diff-line-del{padding:0 12px;color:var(--red);background:var(--red-bg)}
+.diff-lnum{display:inline-block;width:32px;opacity:.4;user-select:none}
+
+/* ── Modals ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;width:460px;max-width:95vw;box-shadow:0 24px 64px rgba(0,0,0,.6)}
+.modal h2{font-size:16px;font-weight:600;color:var(--text-bright);margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--text-dim);margin-bottom:20px}
+.confirm-msg{font-size:14px;color:var(--text);margin-bottom:20px;line-height:1.6}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* ── Settings panel ── */
+#settings-panel{display:none;flex:1;overflow:hidden;background:var(--bg)}
+#settings-panel.open{display:flex}
+#settings-inner{display:flex;flex-direction:column;flex:1;overflow:hidden;max-width:900px;margin:0 auto;width:100%;padding:24px 32px}
+#settings-inner h2{font-size:18px;font-weight:700;color:var(--text-bright);margin-bottom:20px;letter-spacing:.2px}
+.stab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px;gap:0}
+.stab{padding:10px 22px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer;font-size:13px;font-family:var(--font-ui);transition:all .15s}
+.stab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.stab:hover:not(.active){color:var(--text)}
+.stab-panel{display:none;flex:1;overflow-y:auto;min-height:0}
+.stab-panel.active{display:flex;flex-direction:column}
+
+/* Portals tab */
+#portals-layout{display:flex;gap:24px;flex:1;min-height:0}
+#portals-list-col{width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+#portals-list-col .col-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:2px}
+#portal-list{display:flex;flex-direction:column;gap:4px;flex:1;overflow-y:auto}
+.portal-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:all .12s;background:var(--surface)}
+.portal-item:hover{border-color:var(--border2);background:var(--surface2)}
+.portal-item.active-portal{border-color:var(--primary);background:var(--primary-bg)}
+.portal-item .pi-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background .2s}
+.portal-item.active-portal .pi-dot{background:var(--green)}
+.portal-item .pi-url{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-item.active-portal .pi-url{color:var(--primary)}
+.portal-item .pi-del{background:none;border:none;color:transparent;cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s;line-height:1}
+.portal-item:hover .pi-del{color:var(--text-dim)}
+.portal-item .pi-del:hover{color:var(--red)}
+#btn-add-portal{background:var(--surface);border:1px dashed var(--border2);color:var(--text-dim);padding:8px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font-ui);transition:all .15s;text-align:center}
+#btn-add-portal:hover{border-color:var(--primary);color:var(--primary)}
+#portals-form-col{flex:1;min-width:0}
+#portals-form-col .col-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:14px;display:block}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-dim);margin-bottom:6px}
+.form-group input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);transition:border-color .15s}
+.form-group input:focus{outline:none;border-color:var(--primary)}
+.portal-form-actions{display:flex;gap:8px;margin-top:6px;align-items:center}
+#portal-form-msg{font-size:12px;flex:1}
+#portal-form-msg.ok{color:var(--green)}
+#portal-form-msg.err{color:var(--red)}
+#portal-form-msg.info{color:var(--text-dim)}
+
+/* Skills tab */
+#skills-list{display:flex;flex-direction:column;gap:6px}
+.skill-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.skill-name{font-size:13px;font-weight:600;color:var(--text-bright);width:130px;flex-shrink:0}
+.skill-path{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skill-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;flex-shrink:0}
+.skill-badge.loaded{background:var(--green-bg);color:var(--green);border:1px solid #1a4a30}
+.skill-badge.missing{background:var(--red-bg);color:var(--red);border:1px solid #4a1a1a}
+.skill-tokens{font-size:11px;color:var(--text-dim);width:80px;text-align:right;flex-shrink:0}
+#skills-total{font-size:12px;color:var(--text-dim);margin-top:12px;text-align:right}
+#btn-reload-skills{background:none;border:1px solid var(--border2);color:var(--text-dim);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font-ui);transition:all .15s;margin-bottom:14px;align-self:flex-start}
+#btn-reload-skills:hover{color:var(--primary);border-color:var(--primary)}
+
+/* Rules tab */
+#stab-rules-inner{display:flex;flex-direction:column;flex:1;min-height:0}
+.rules-hint{font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.5}
+#rules-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;overflow-y:auto;max-height:calc(100vh - 340px)}
+.rule-item{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:6px 8px;cursor:default;transition:border-color .15s}
+.rule-item.dragging{opacity:.4;border-style:dashed}
+.rule-item.drag-over{border-color:var(--primary);background:var(--primary-bg)}
+.rule-drag{color:var(--text-dim);cursor:grab;font-size:14px;flex-shrink:0;user-select:none;padding:0 2px}
+.rule-drag:active{cursor:grabbing}
+.rule-enabled{flex-shrink:0;width:15px;height:15px;accent-color:var(--primary);cursor:pointer}
+.rule-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;word-break:break-word}
+.rule-text.disabled{color:var(--text-dim);text-decoration:line-through}
+.rule-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;flex-shrink:0;line-height:1;transition:color .15s}
+.rule-del:hover{color:var(--red)}
+#rules-add-row{display:flex;gap:6px;margin-top:4px}
+#rule-new-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui)}
+#rule-new-input:focus{outline:none;border-color:var(--primary)}
+#rule-new-input::placeholder{color:var(--text-dim)}
+#rules-save-msg{font-size:12px;padding:4px 0;min-height:18px}
+#rules-save-msg.ok{color:var(--green)}
+#rules-save-msg.err{color:var(--red)}
+.rules-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+/* Shared buttons */
+.btn{padding:8px 18px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:var(--font-ui);transition:all .15s}
+.btn-primary{background:var(--primary);color:var(--bg)}
+.btn-primary:hover{background:var(--primary-dim)}
+.btn-ghost{background:none;border:1px solid var(--border2);color:var(--text-dim)}
+.btn-ghost:hover{color:var(--text-bright);border-color:var(--text-dim)}
+.btn-danger{background:var(--red-bg);border:1px solid #4a1a1a;color:var(--red)}
+.btn-danger:hover{background:#3a1212}
+
+/* ── Version pill (topbar) ── */
+#version-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;letter-spacing:.3px;background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim);cursor:pointer;transition:all .15s}
+#version-pill.v117{color:#f0c040;border-color:#4a3808;background:#2a2008}
+#version-pill.v118{color:var(--primary);border-color:#1a4a3a;background:var(--primary-bg)}
+#version-pill.unknown{color:var(--text-dim)}
+#version-pill:hover{filter:brightness(1.2)}
+
+/* ── Migrate button highlight ── */
+.action-btn.migrate{background:#3a2808;border-color:#4a3808;color:var(--yellow)}
+.action-btn.migrate:hover{background:#4a3808;color:#ffd060}
+
+/* ── Shortcode popup ── */
+#sc-popup{position:fixed;z-index:300;min-width:280px;max-width:380px;max-height:280px;overflow-y:auto;background:var(--surface);border:1px solid var(--primary-dim);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,.6);display:none;font-family:var(--font-ui);font-size:13px}
+#sc-popup.open{display:block}
+.sc-section{padding:4px 0}
+.sc-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);padding:6px 12px 3px}
+.sc-item{padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:2px solid transparent;transition:background .08s}
+.sc-item:hover,.sc-item.active{background:var(--primary-bg);border-left-color:var(--primary);color:var(--text-bright)}
+.sc-item-icon{font-size:11px;width:14px;flex-shrink:0;color:var(--primary)}
+.sc-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-item-value{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-item.active .sc-item-value{color:#9bb}
+.sc-empty{padding:14px;font-size:12px;color:var(--text-dim);text-align:center}
+
+/* ── Migrate diff modal ── */
+.modal.wide{width:760px;max-width:96vw}
+.migrate-summary{font-size:12px;color:var(--text-dim);margin-bottom:10px}
+.migrate-changes{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;max-height:140px;overflow-y:auto;padding:8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius)}
+.migrate-change-row{display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--font-mono)}
+.migrate-change-row .mc-count{font-weight:700;color:var(--primary);min-width:32px;text-align:right}
+.migrate-change-row .mc-from{color:var(--red);text-decoration:line-through;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.migrate-change-row .mc-arrow{color:var(--text-dim)}
+.migrate-change-row .mc-to{color:var(--green);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.migrate-tabbar{display:flex;border-bottom:1px solid var(--border);margin-bottom:8px}
+.migrate-tab{padding:6px 14px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:var(--font-ui)}
+.migrate-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── DS/Query modal ── */
+.modal.large{width:680px;max-width:96vw}
+.ds-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px}
+.ds-tab{padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer;font-size:13px;font-family:var(--font-ui)}
+.ds-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.ds-form .form-group{margin-bottom:12px}
+.ds-form textarea{width:100%;min-height:100px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:12px;font-family:var(--font-mono);resize:vertical}
+.ds-form textarea:focus{outline:none;border-color:var(--primary)}
+.ds-form select{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui);cursor:pointer}
+.ds-form select:focus{outline:none;border-color:var(--primary)}
+.ds-preview{margin-top:10px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);max-height:180px;overflow:auto;font-family:var(--font-mono);font-size:11px}
+.ds-preview-empty{padding:14px;color:var(--text-dim);text-align:center}
+.ds-preview table{width:100%;border-collapse:collapse}
+.ds-preview th{padding:5px 8px;text-align:left;color:var(--primary);font-weight:600;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.ds-preview td{padding:4px 8px;color:var(--text-dim);white-space:nowrap;border-bottom:1px solid var(--border)}
+.ds-status{font-size:12px;min-height:16px;flex:1}
+.ds-status.ok{color:var(--green)}
+.ds-status.err{color:var(--red)}
+.ds-status.info{color:var(--text-dim)}
+
+/* "+ Data" button in sidebar footer */
+#btn-new-ds{width:100%;margin-top:6px;background:var(--surface2);border:1px dashed var(--border2);color:var(--text-dim);padding:8px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font-ui);transition:all .15s}
+#btn-new-ds:hover{border-color:var(--primary);color:var(--primary)}
+
+/* Version override row in portal form */
+.portal-form-row{display:flex;gap:12px;align-items:flex-end}
+.portal-form-row .form-group{flex:1}
+.portal-form-row .form-group.compact{flex:0 0 140px}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <h1><span class="logo">Z</span> Block Builder</h1>
+  <span id="conn-pill" class="disconnected">Not connected</span>
+  <span id="version-pill" class="unknown" onclick="openSettings();switchSettingsTab('portals')" title="Portal version (click to change)">v?</span>
+  <div class="spacer"></div>
+  <span id="gh-pill" onclick="openSettings();switchSettingsTab('github')" title="GitHub config" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;letter-spacing:.3px;transition:all .2s;background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)">&#9645; GitHub</span>
+  <button class="topbar-btn" id="btn-settings" onclick="openSettings()">&#9881; Settings</button>
+  <button class="topbar-btn" id="btn-back-from-settings" onclick="closeSettings()" style="display:none">&larr; Back</button>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <div id="sidebar">
+    <div id="sidebar-top">
+      <div class="sidebar-label">Blocks</div>
+      <div id="search-wrap">
+        <span id="search-icon">&#8981;</span>
+        <input id="search-input" type="text" placeholder="Search blocks..." oninput="filterBlocks(this.value)"/>
+      </div>
+      <div class="sidebar-meta">
+        <span id="block-count">&#8212;</span>
+        <button class="icon-btn" onclick="loadBlocks()">&#8635;</button>
+      </div>
+    </div>
+
+    <!-- Block type filter pills -->
+    <div id="type-filter-bar"></div>
+
+    <div id="block-list"></div>
+    <div id="sidebar-footer">
+      <button id="btn-new-block" onclick="newBlock()">+ New Block</button>
+      <button id="btn-new-ds" onclick="openDsModal()">+ Datasource / Query</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="empty-state">
+      <div class="es-icon">&#11042;</div>
+      <p>Select a block to start editing</p>
+      <small style="font-size:12px;opacity:.6">Connect your portal in Settings first</small>
+    </div>
+
+    <div id="editor-container">
+      <div id="action-bar">
+        <input id="block-name-input" type="text" placeholder="Block name..."/>
+        <span id="save-status"></span>
+        <button class="action-btn" id="btn-gh-history" onclick="toggleBlockHistory()" title="View GitHub history">&#9965; History</button>
+        <button class="action-btn" id="btn-gh-push" onclick="openGhPushModal()" title="Push to GitHub">&#8679; Push</button>
+        <button class="action-btn migrate" id="btn-migrate" onclick="openMigrateModal()" title="Migrate this block to 1.18" style="display:none">&#8631; Migrate</button>
+        <button class="action-btn" onclick="duplicateBlock()">&#10232; Dupe</button>
+        <button class="action-btn danger" onclick="confirmDelete()">&#10005; Delete</button>
+        <button class="action-btn primary" id="btn-save" onclick="saveBlock()" disabled>Save</button>
+        <button class="action-btn ai-btn" id="btn-ai-toggle" onclick="toggleAI()">&#10022; AI</button>
+      </div>
+
+      <!-- Data preview panel -->
+      <div id="data-preview">
+        <div id="data-preview-header" onclick="toggleDataPreview()">
+          <span id="data-preview-label">&#9642; Datasource Preview</span>
+          <span id="data-preview-meta"></span>
+          <span id="data-preview-toggle">&#9660;</span>
+        </div>
+        <div id="data-preview-body">
+          <div id="data-preview-content"></div>
+        </div>
+      </div>
+
+      <!-- GitHub history panel -->
+      <div id="gh-history-panel">
+        <div id="gh-history-header">
+          <span id="gh-history-label">&#9965; GitHub History</span>
+          <span id="gh-history-path" style="font-size:10px;font-family:var(--font-mono);color:var(--text-dim);flex:1"></span>
+          <button class="icon-btn" onclick="toggleBlockHistory()">&#10005;</button>
+        </div>
+        <div id="gh-history-body"></div>
+      </div>
+
+      <div id="view-area">
+        <div id="code-view">
+          <div id="tab-bar">
+            <button class="tab active" onclick="switchTab('html')">HTML + JS</button>
+            <button class="tab" onclick="switchTab('css')">CSS</button>
+          </div>
+          <div id="monaco-html-wrap" class="active"></div>
+          <div id="monaco-css-wrap"></div>
+        </div>
+
+        <div id="ai-view">
+          <div id="ai-toolbar">
+            <span id="ai-toolbar-label">&#10022; AI Assistant</span>
+            <button class="ai-tool-btn" onclick="clearChat()">Clear Chat</button>
+            <button class="ai-tool-btn back" onclick="toggleAI()">&larr; Back to Editor</button>
+          </div>
+          <div id="chat-messages"></div>
+          <div id="chat-input-area">
+            <textarea id="chat-input" placeholder="Describe the block you want, or ask to modify the current code..." rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+            <button id="btn-send" onclick="sendChat()" title="Send">&#8679;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel">
+  <div id="settings-inner">
+    <h2>&#9881; Settings</h2>
+    <div class="stab-bar">
+      <button class="stab active" onclick="switchSettingsTab('portals')">&#127760; Portals</button>
+      <button class="stab"        onclick="switchSettingsTab('github')">&#9645; GitHub</button>
+      <button class="stab"        onclick="switchSettingsTab('skills')">&#9889; Skills</button>
+      <button class="stab"        onclick="switchSettingsTab('rules')">&#10022; AI Rules</button>
+    </div>
+
+    <!-- GitHub tab -->
+    <div class="stab-panel" id="stab-github">
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:520px">
+        <div class="form-group">
+          <label>Personal Access Token</label>
+          <input id="cfg-gh-token" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off"/>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Token needs the <code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-family:var(--font-mono)">repo</code> scope. Generate at github.com &#8594; Settings &#8594; Developer Settings.</div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div class="form-group" style="flex:1">
+            <label>Owner / Org</label>
+            <input id="cfg-gh-owner" type="text" placeholder="your-username"/>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Repository</label>
+            <input id="cfg-gh-repo" type="text" placeholder="zportal-blocks"/>
+          </div>
+          <div class="form-group" style="width:110px">
+            <label>Branch</label>
+            <input id="cfg-gh-branch" type="text" placeholder="main"/>
+          </div>
+        </div>
+        <div id="gh-test-status" style="font-size:12px;min-height:16px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="testGitHub()">Test Connection</button>
+          <button class="btn btn-primary" onclick="saveGitHubSettings()">Save GitHub</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portals tab -->
+    <div class="stab-panel active" id="stab-portals">
+      <div id="portals-layout">
+        <div id="portals-list-col">
+          <div class="col-label">Saved Portals</div>
+          <div id="portal-list"></div>
+          <button id="btn-add-portal" onclick="addNewPortal()">+ Add Portal</button>
+        </div>
+        <div id="portals-form-col">
+          <span class="col-label" id="portal-form-title">Portal Details</span>
+          <div class="form-group"><label>Portal URL</label><input id="cfg-portal-url" type="text" placeholder="https://your-portal.zuarbase.net"/></div>
+          <div class="form-group"><label>API Key</label><input id="cfg-api-key" type="password" placeholder="Portal API key"/></div>
+          <div class="form-group"><label>User ID</label><input id="cfg-user-id" type="text" placeholder="Your portal user ID"/></div>
+          <div class="form-group"><label>Anthropic API Key</label><input id="cfg-anthropic-key" type="password" placeholder="sk-ant-..."/></div>
+          <div class="portal-form-row">
+            <div class="form-group compact">
+              <label>Portal Version</label>
+              <select id="cfg-portal-version" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui)">
+                <option value="auto">Auto-detect</option>
+                <option value="1.17">1.17</option>
+                <option value="1.18">1.18</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>Detected</label>
+              <div id="cfg-portal-version-detected" style="font-size:13px;color:var(--text-dim);padding:8px 0">&mdash;</div>
+            </div>
+          </div>
+          <div class="portal-form-actions">
+            <span id="portal-form-msg"></span>
+            <button class="btn btn-ghost" id="btn-portal-save" onclick="savePortalForm()">Save</button>
+            <button class="btn btn-primary" id="btn-portal-connect" onclick="connectSelectedPortal()">Connect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills tab -->
+    <div class="stab-panel" id="stab-skills">
+      <button id="btn-reload-skills" onclick="loadSkillsInfo()">&#8635; Refresh</button>
+      <div id="skills-list"></div>
+      <div id="skills-total"></div>
+    </div>
+
+    <!-- AI Rules tab -->
+    <div class="stab-panel" id="stab-rules">
+      <div id="stab-rules-inner">
+        <p class="rules-hint">These rules are appended to the AI system prompt on every request. Use them to enforce patterns, coding standards, or preferences across all generated blocks.</p>
+        <div id="rules-list"></div>
+        <div id="rules-add-row">
+          <input id="rule-new-input" type="text" placeholder="Add a new rule..." onkeydown="ruleInputKeydown(event)"/>
+          <button class="btn btn-primary" onclick="addRule()">&#xFF0B; Add</button>
+        </div>
+        <div id="rules-save-msg"></div>
+        <div class="rules-actions">
+          <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub Push Modal -->
+<div class="overlay" id="gh-push-overlay">
+  <div class="modal">
+    <h2>&#8679; Push to GitHub</h2>
+    <div class="modal-sub" id="gh-push-block-info"></div>
+    <div style="margin-bottom:8px">
+      <div class="form-group" style="margin:0">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-dim);display:block;margin-bottom:6px">Commit Message</label>
+        <input id="gh-push-msg" type="text" placeholder="e.g. feat: update revenue chart" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:13px;font-family:var(--font-ui)" onkeydown="if(event.key==='Enter')confirmGhPush()"/>
+      </div>
+      <div id="gh-push-status" class="push-status" style="display:none"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGhPushModal()">Cancel</button>
+      <button class="btn btn-primary" id="gh-push-confirm-btn" onclick="confirmGhPush()">Push</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub Restore Modal -->
+<div class="overlay" id="gh-restore-overlay">
+  <div class="modal" style="width:600px;max-width:95vw">
+    <h2>&#8617; Restore from GitHub</h2>
+    <div class="modal-sub" id="gh-restore-commit-info"></div>
+    <div style="background:var(--yellow-bg);border:1px solid #4a3808;border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--yellow);margin-bottom:12px;line-height:1.5">
+      &#9888; This will overwrite the current portal block with the selected commit. A <em>[restored]</em> commit will be auto-pushed to GitHub after.
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-dim);margin-bottom:6px">Diff (GitHub version &#8594; current portal)</div>
+      <div class="diff-view" id="gh-restore-diff"></div>
+    </div>
+    <div id="gh-restore-status" class="push-status" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGhRestoreModal()">Cancel</button>
+      <button class="btn btn-primary" id="gh-restore-confirm-btn" onclick="confirmGhRestore()" disabled>Restore to Portal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main Script -->
+<script>
+// ── GitHub State & Config ──────────────────────────────────────────────────
+var ghPushTarget    = null;
+var ghRestoreTarget = null;  // { block, sha, commitMsg, ghContent }
+var ghHistoryOpen   = false;
+
+var GH_API = 'https://api.github.com';
+
+function ghConfig() {
+  try {
+    var cfg = JSON.parse(localStorage.getItem('bb_gh_config') || '{}');
+    return { token: cfg.token||'', owner: cfg.owner||'', repo: cfg.repo||'', branch: cfg.branch||'main' };
+  } catch(e) { return { token:'', owner:'', repo:'', branch:'main' }; }
+}
+function ghReady() { var g = ghConfig(); return !!(g.token && g.owner && g.repo); }
+
+function ghFetch(path, options) {
+  options = options || {};
+  var g = ghConfig();
+  options.headers = Object.assign({
+    'Authorization': 'Bearer ' + g.token,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  }, options.headers || {});
+  return fetch(GH_API + path, options);
+}
+
+function portalSlug() {
+  try {
+    // Read portal URL from the active portal in savedPortals (set when connected)
+    var portalUrl = '';
+    if (savedPortals && savedPortals.length && activePortalIdx >= 0) {
+      portalUrl = (savedPortals[activePortalIdx] || {}).portal_url || '';
+    }
+    if (!portalUrl) {
+      // Fallback: try server config via already-loaded config
+      var raw = localStorage.getItem('bb_portal_url') || '';
+      portalUrl = raw;
+    }
+    if (!portalUrl) return 'portal';
+    return portalUrl
+      .replace(/https?:\/\//,'')
+      .replace(/\/$/,'')
+      .replace(/\./g,'-')
+      .replace(/[^a-zA-Z0-9-]/g,'-');
+  } catch(e) { return 'portal'; }
+}
+
+function blockFolder(block) {
+  return safeFilename(block.name) + '--' + block.id.slice(0, 8);
+}
+function blockBasePath(block) {
+  return 'blocks/' + portalSlug() + '/' + blockFolder(block);
+}
+function safeFilename(name) {
+  return String(name).toLowerCase().trim()
+    .replace(/[^\w\s-]/g,'').replace(/[\s_]+/g,'-')
+    .replace(/-+/g,'-').replace(/^-|-$/g,'') || 'block';
+}
+
+function blockToFiles(block) {
+  var base  = blockBasePath(block);
+  var type  = block.type || 'unknown';
+  var jd    = block.json_data || {};
+  var files = [];
+  var now   = new Date().toISOString();
+
+  var meta = {
+    id: block.id, name: block.name, type: type,
+    created_at: block.created_at || null, updated_at: block.updated_at || null,
+    tags: block.tags || [], access: block.access || {},
+    data: block.data ? {
+      source_id: block.data.__source__ || null,
+      columns: block.data.columns || [],
+      where: block.data.where || null,
+      limit: block.data.limit || null,
+    } : null,
+    _sync: {
+      portal_host: portalSlug().replace(/-/g,'.'), synced_at: now,
+      repo: ghConfig().owner + '/' + ghConfig().repo,
+      branch: ghConfig().branch || 'main', path: base
+    }
+  };
+  files.push({ path: base + '/meta.json', content: JSON.stringify(meta, null, 2) });
+
+  if (type === 'html') {
+    var raw = jd.content || jd.html || [];
+    files.push({ path: base + '/block.html', content: Array.isArray(raw) ? raw.join('\n') : String(raw) });
+  } else if (Object.keys(jd).length) {
+    files.push({ path: base + '/config.json', content: JSON.stringify(jd, null, 2) });
+  }
+
+  var css = Array.isArray(block.css) ? block.css.join('\n') : (block.css || '');
+  files.push({ path: base + '/block.css', content: css });
+
+  return files;
+}
+
+// ── Push queue — prevents "not a fast forward" from overlapping pushes ───────
+var _pushQueue = Promise.resolve();
+function queuePush(fn) {
+  _pushQueue = _pushQueue.then(fn).catch(function(){});
+  return _pushQueue;
+}
+
+// ── Core GitHub push (with auto-retry on non-fast-forward) ────────────────
+async function doPushRaw(treeEntries, commitMsg) {
+  var g = ghConfig();
+  var branch = g.branch || 'main';
+  var maxRetries = 3;
+
+  for (var attempt = 1; attempt <= maxRetries; attempt++) {
+    // Always fetch a fresh branch tip immediately before each attempt
+    var branchResp = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/branches/' + branch);
+    if (!branchResp.ok) throw new Error('Branch fetch failed: ' + branchResp.status);
+    var branchData = await branchResp.json();
+    var latestSha  = branchData.commit.sha;
+    var baseSha    = branchData.commit.commit.tree.sha;
+
+    var treeResp = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/git/trees', {
+      method: 'POST',
+      body: JSON.stringify({ base_tree: baseSha, tree: treeEntries })
+    });
+    if (!treeResp.ok) { var e = await treeResp.json().catch(function(){return{};}); throw new Error('Tree: ' + (e.message||treeResp.status)); }
+    var treeData = await treeResp.json();
+
+    var commitResp = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/git/commits', {
+      method: 'POST',
+      body: JSON.stringify({ message: commitMsg, tree: treeData.sha, parents: [latestSha] })
+    });
+    if (!commitResp.ok) { var e2 = await commitResp.json().catch(function(){return{};}); throw new Error('Commit: ' + (e2.message||commitResp.status)); }
+    var commitData = await commitResp.json();
+
+    // Re-fetch the very latest SHA right before updating the ref
+    var tipResp = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/git/refs/heads/' + branch);
+    if (tipResp.ok) {
+      var tipData = await tipResp.json();
+      // If branch moved since we started, our commit's parent is stale —
+      // but we still attempt; if it fails we retry the whole sequence
+      latestSha = tipData.object.sha;
+    }
+
+    var refResp = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/git/refs/heads/' + branch, {
+      method: 'PATCH',
+      body: JSON.stringify({ sha: commitData.sha, force: false })
+    });
+
+    if (refResp.ok) return commitData;
+
+    var refErr = await refResp.json().catch(function(){return{};});
+    var msg = refErr.message || '';
+
+    // "not a fast forward" — branch moved under us, retry
+    if (attempt < maxRetries && (msg.includes('fast forward') || msg.includes('not a fast-forward'))) {
+      console.warn('[GitHub] Non-fast-forward on attempt ' + attempt + ', retrying...');
+      await new Promise(function(r){ setTimeout(r, 300 * attempt); }); // brief back-off
+      continue;
+    }
+
+    throw new Error('Ref: ' + (msg || refResp.status));
+  }
+}
+
+// ── Auto-push after every save (serialised through queue) ─────────────────
+function autoPushToGitHub(block, commitMsg) {
+  if (!ghReady()) return;
+  queuePush(async function() {
+    try {
+      var files = blockToFiles(block);
+      var entries = files.map(function(f) { return { path: f.path, mode: '100644', type: 'blob', content: f.content }; });
+      var data = await doPushRaw(entries, commitMsg);
+      console.log('[GitHub] Auto-pushed: ' + data.sha.slice(0,7) + ' — "' + commitMsg + '"');
+      updateGhPill();
+    } catch(e) {
+      console.warn('[GitHub] Auto-push failed: ' + e.message);
+    }
+  });
+}
+
+// ── Manual push modal ──────────────────────────────────────────────────────
+function openGhPushModal() {
+  if (!currentBlock) return;
+  if (!ghReady()) { openSettings(); switchSettingsTab('github'); return; }
+  ghPushTarget = currentBlock;
+  ge('gh-push-block-info').textContent = currentBlock.name + '  (' + (currentBlock.type||'') + ')  ' + currentBlock.id.slice(0,8) + '…';
+  ge('gh-push-msg').value = '';
+  var st = ge('gh-push-status'); st.style.display = 'none'; st.className = 'push-status';
+  ge('gh-push-confirm-btn').disabled = false;
+  ge('gh-push-overlay').classList.add('open');
+  setTimeout(function() { ge('gh-push-msg').focus(); }, 50);
+}
+function closeGhPushModal() { ge('gh-push-overlay').classList.remove('open'); ghPushTarget = null; }
+
+async function confirmGhPush() {
+  var msg = ge('gh-push-msg').value.trim();
+  if (!msg) { showPushStatus('Commit message is required.', 'error'); return; }
+  var btn = ge('gh-push-confirm-btn');
+  btn.disabled = true;
+  showPushStatus('Connecting to GitHub…', 'info');
+  var files = blockToFiles(ghPushTarget);
+  var entries = files.map(function(f) { return { path: f.path, mode: '100644', type: 'blob', content: f.content }; });
+  try {
+    var data = await doPushRaw(entries, msg);
+    showPushStatus('✓ Pushed — ' + data.sha.slice(0,7), 'ok');
+    updateGhPill();
+    setTimeout(closeGhPushModal, 1400);
+  } catch(e) {
+    showPushStatus('✗ ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+function showPushStatus(msg, type) {
+  var el = ge('gh-push-status');
+  el.textContent = msg; el.className = 'push-status ' + type; el.style.display = 'block';
+}
+
+// ── History panel (inline below editor action bar) ─────────────────────────
+function toggleBlockHistory() {
+  if (!currentBlock) return;
+  if (!ghReady()) { openSettings(); switchSettingsTab('github'); return; }
+  var panel = ge('gh-history-panel');
+  ghHistoryOpen = !ghHistoryOpen;
+  panel.classList.toggle('open', ghHistoryOpen);
+  if (ghHistoryOpen) loadBlockHistory(currentBlock);
+}
+
+async function loadBlockHistory(block) {
+  var bodyEl = ge('gh-history-body');
+  var g = ghConfig();
+  var path = blockBasePath(block) + '/block.html';
+  ge('gh-history-path').textContent = path;
+  bodyEl.innerHTML = '<div style="padding:14px 12px;font-size:12px;color:var(--text-dim)">Loading commits…</div>';
+
+  try {
+    var r = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/commits?path=' + encodeURIComponent(path) + '&sha=' + (g.branch||'main') + '&per_page=20');
+    if (!r.ok) throw new Error('GitHub ' + r.status);
+    var commits = await r.json();
+    if (!commits.length) {
+      bodyEl.innerHTML = '<div style="padding:16px 12px;font-size:12px;color:var(--text-dim)">No commits found for this block\'s path.</div>';
+      return;
+    }
+    bodyEl.innerHTML = commits.map(function(c, i) {
+      return '<div class="gh-commit-row">' +
+        '<div class="gh-commit-sha"><a href="' + c.html_url + '" target="_blank" style="color:var(--primary);text-decoration:none">' + c.sha.slice(0,7) + '</a></div>' +
+        '<div class="gh-commit-info">' +
+          '<div class="gh-commit-msg">' + esc(c.commit.message) + (i===0?'<span class="gh-latest">latest</span>':'') + '</div>' +
+          '<div class="gh-commit-meta">' + esc(c.commit.author.name) + ' · ' + new Date(c.commit.author.date).toLocaleString() + '</div>' +
+        '</div>' +
+        '<div class="gh-commit-actions">' +
+          '<button class="action-btn" style="padding:3px 9px;font-size:11px" onclick="openGhRestoreModal(\'' + esc(block.id) + '\',\'' + c.sha + '\',\'' + esc(c.commit.message).replace(/'/g,'&#39;') + '\')">Restore</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch(e) {
+    bodyEl.innerHTML = '<div style="padding:12px;color:var(--red);font-size:12px;font-family:var(--font-mono)">✗ ' + esc(e.message) + '</div>';
+  }
+}
+
+// ── Restore from commit ────────────────────────────────────────────────────
+async function openGhRestoreModal(blockId, sha, commitMsg) {
+  var block = allBlocks.filter(function(b) { return b.id === blockId; })[0];
+  if (!block) return;
+  ghRestoreTarget = { block: block, sha: sha, commitMsg: commitMsg, ghContent: null };
+  ge('gh-restore-commit-info').textContent = sha.slice(0,7) + '  "' + commitMsg + '"  →  ' + block.name;
+  ge('gh-restore-diff').innerHTML = '<div style="padding:12px;font-size:11px;color:var(--text-dim);font-family:var(--font-mono)">Loading diff…</div>';
+  ge('gh-restore-status').style.display = 'none';
+  ge('gh-restore-confirm-btn').disabled = true;
+  ge('gh-restore-overlay').classList.add('open');
+
+  var g = ghConfig();
+  var path = blockBasePath(block) + '/block.html';
+  try {
+    var r = await ghFetch('/repos/' + g.owner + '/' + g.repo + '/contents/' + encodeURIComponent(path) + '?ref=' + sha);
+    if (!r.ok) throw new Error('GitHub ' + r.status + ' — block.html not found at this commit');
+    var data = await r.json();
+    var ghContent = atob(data.content.replace(/\n/g,''));
+    ghRestoreTarget.ghContent = ghContent;
+
+    var jd = block.json_data || {};
+    var raw = jd.content || jd.html || [];
+    var currentContent = Array.isArray(raw) ? raw.join('\n') : String(raw);
+
+    ge('gh-restore-diff').innerHTML = buildDiff(ghContent, currentContent);
+    ge('gh-restore-confirm-btn').disabled = false;
+  } catch(e) {
+    ge('gh-restore-diff').innerHTML = '<div style="padding:12px;color:var(--red);font-size:11px;font-family:var(--font-mono)">✗ ' + esc(e.message) + '</div>';
+  }
+}
+function closeGhRestoreModal() { ge('gh-restore-overlay').classList.remove('open'); ghRestoreTarget = null; }
+
+async function confirmGhRestore() {
+  if (!ghRestoreTarget || !ghRestoreTarget.ghContent) return;
+  var block = ghRestoreTarget.block;
+  var sha = ghRestoreTarget.sha;
+  var ghContent = ghRestoreTarget.ghContent;
+  var btn = ge('gh-restore-confirm-btn');
+  btn.disabled = true;
+  showRestoreStatus('Updating portal block…', 'info');
+
+  var payload = {
+    name: block.name, type: block.type,
+    json_data: Object.assign({}, block.json_data || {}, { content: ghContent.split('\n') }),
+    css: block.css || [], tags: block.tags || [], access: block.access || {}
+  };
+  try {
+    var r = await fetch('/api/proxy/api/blocks/' + block.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) { var e = await r.json().catch(function(){return{};}); throw new Error(e.message || 'HTTP ' + r.status); }
+    var saved = await r.json();
+
+    showRestoreStatus('✓ Portal updated — pushing restore commit…', 'ok');
+    var restoreMsg = '[restored] ' + block.name + ' from ' + sha.slice(0,7);
+    await autoPushToGitHub(saved, restoreMsg);
+
+    // Update local state
+    var idx = allBlocks.findIndex(function(b) { return b.id === saved.id; });
+    if (idx !== -1) allBlocks[idx] = saved;
+    applyFilters();
+    if (currentBlock && currentBlock.id === saved.id) doSelectBlock(saved.id);
+
+    showRestoreStatus('✓ Restored and committed to GitHub', 'ok');
+    setTimeout(closeGhRestoreModal, 1600);
+  } catch(e) {
+    showRestoreStatus('✗ ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+function showRestoreStatus(msg, type) {
+  var el = ge('gh-restore-status');
+  el.textContent = msg; el.className = 'push-status ' + type; el.style.display = 'block';
+}
+
+// ── LCS-based diff builder ─────────────────────────────────────────────────
+function buildDiff(ghContent, portalContent) {
+  var aLines = ghContent.split('\n');
+  var bLines = portalContent.split('\n');
+  var lcs = computeLCS(aLines, bLines);
+  var html = '';
+  var ai = 0, bi = 0, li = 0, lineNum = 1;
+  while (ai < aLines.length || bi < bLines.length) {
+    if (li < lcs.length && ai < aLines.length && bi < bLines.length && aLines[ai] === lcs[li] && bLines[bi] === lcs[li]) {
+      html += '<div class="diff-line-ctx"><span class="diff-lnum">' + lineNum++ + '</span>' + escDiff(aLines[ai]) + '</div>';
+      ai++; bi++; li++;
+    } else if (li < lcs.length && bi < bLines.length && bLines[bi] === lcs[li]) {
+      html += '<div class="diff-line-add"><span class="diff-lnum">+' + lineNum++ + '</span>' + escDiff(aLines[ai]) + '</div>';
+      ai++;
+    } else if (li < lcs.length && ai < aLines.length && aLines[ai] === lcs[li]) {
+      html += '<div class="diff-line-del"><span class="diff-lnum">-' + lineNum++ + '</span>' + escDiff(bLines[bi]) + '</div>';
+      bi++;
+    } else {
+      if (ai < aLines.length) { html += '<div class="diff-line-add"><span class="diff-lnum">+' + lineNum + '</span>' + escDiff(aLines[ai++]) + '</div>'; }
+      if (bi < bLines.length) { html += '<div class="diff-line-del"><span class="diff-lnum">-' + lineNum++ + '</span>' + escDiff(bLines[bi++]) + '</div>'; }
+    }
+  }
+  return '<div style="font-family:var(--font-mono);font-size:11px;line-height:1.7">' +
+    (html || '<div style="padding:12px;color:var(--text-dim)">No differences found.</div>') + '</div>';
+}
+function computeLCS(a, b) {
+  var m = a.length, n = b.length;
+  var dp = Array.from({length:m+1}, function(){ return new Array(n+1).fill(0); });
+  for (var i=1;i<=m;i++) for (var j=1;j<=n;j++) dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j],dp[i][j-1]);
+  var seq=[],i=m,j=n;
+  while(i>0&&j>0){ if(a[i-1]===b[j-1]){seq.unshift(a[i-1]);i--;j--;} else if(dp[i-1][j]>dp[i][j-1])i--; else j--; }
+  return seq;
+}
+function escDiff(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── GitHub settings ────────────────────────────────────────────────────────
+function loadGhSettings() {
+  var g = ghConfig();
+  ge('cfg-gh-token').value  = g.token  || '';
+  ge('cfg-gh-owner').value  = g.owner  || '';
+  ge('cfg-gh-repo').value   = g.repo   || '';
+  ge('cfg-gh-branch').value = g.branch || 'main';
+  updateGhPill();
+}
+
+async function saveGitHubSettings() {
+  var ghCfg = {
+    token:  ge('cfg-gh-token').value.trim(),
+    owner:  ge('cfg-gh-owner').value.trim(),
+    repo:   ge('cfg-gh-repo').value.trim(),
+    branch: ge('cfg-gh-branch').value.trim() || 'main'
+  };
+  // Write to localStorage immediately
+  localStorage.setItem('bb_gh_config', JSON.stringify(ghCfg));
+  updateGhPill();
+
+  // Write to server config.json so it survives restarts
+  try {
+    var r = await fetch('/api/config');
+    var d = await r.json();
+    var cfg = d.config || d;
+    cfg.github = ghCfg;
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg)
+    });
+    ge('gh-test-status').textContent = 'Saved ✓';
+    ge('gh-test-status').style.color = 'var(--green)';
+  } catch(e) {
+    ge('gh-test-status').textContent = 'Saved locally (server write failed)';
+    ge('gh-test-status').style.color = 'var(--yellow)';
+  }
+  setTimeout(function(){ ge('gh-test-status').textContent = ''; }, 2500);
+}
+
+async function testGitHub() {
+  var token = ge('cfg-gh-token').value.trim();
+  var owner = ge('cfg-gh-owner').value.trim();
+  var repo  = ge('cfg-gh-repo').value.trim();
+  if (!token || !owner || !repo) {
+    ge('gh-test-status').textContent = 'Token, owner, and repo are required.';
+    ge('gh-test-status').style.color = 'var(--red)';
+    return;
+  }
+  ge('gh-test-status').textContent = 'Testing…';
+  ge('gh-test-status').style.color = 'var(--text-dim)';
+  try {
+    var r = await fetch(GH_API + '/repos/' + owner + '/' + repo, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var d = await r.json();
+    ge('gh-test-status').textContent = '✓ Connected — ' + d.full_name + ' (' + (d.private ? 'private' : 'public') + ')';
+    ge('gh-test-status').style.color = 'var(--green)';
+  } catch(e) {
+    ge('gh-test-status').textContent = '✗ ' + e.message;
+    ge('gh-test-status').style.color = 'var(--red)';
+  }
+}
+
+function updateGhPill() {
+  var pill = ge('gh-pill');
+  if (!pill) return;
+  if (ghReady()) {
+    var g = ghConfig();
+    pill.textContent = '⬡ ' + g.owner + '/' + g.repo;
+    pill.style.color = 'var(--green)';
+    pill.style.borderColor = '#1a4a30';
+    pill.style.background = 'var(--green-bg)';
+  } else {
+    pill.textContent = '⬡ GitHub';
+    pill.style.color = 'var(--text-dim)';
+    pill.style.borderColor = 'var(--border2)';
+    pill.style.background = 'var(--surface2)';
+  }
+}
+</script>
+
+<!-- Confirm Delete Modal -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal">
+    <h2>Delete Block</h2>
+    <p class="confirm-msg" id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="deleteBlock()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Switch Warning Modal -->
+<div class="overlay" id="switch-overlay">
+  <div class="modal">
+    <h2>Switch Block?</h2>
+    <p class="confirm-msg">This block has an active AI chat history. Switching will clear it.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSwitchWarning()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSwitch()">Switch Anyway</button>
+    </div>
+  </div>
+</div>
+
+<!-- Migrate Modal -->
+<div class="overlay" id="migrate-overlay">
+  <div class="modal wide">
+    <h2>&#8631; Migrate Block to Portal 1.18</h2>
+    <div class="modal-sub" id="migrate-block-info"></div>
+    <div class="migrate-summary" id="migrate-summary">Scanning block&hellip;</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-dim);margin-bottom:6px">Transforms To Apply</div>
+    <div class="migrate-changes" id="migrate-changes"></div>
+    <div class="migrate-tabbar">
+      <button class="migrate-tab active" id="migrate-tab-html" onclick="switchMigrateTab('html')">HTML + JS</button>
+      <button class="migrate-tab" id="migrate-tab-css" onclick="switchMigrateTab('css')">CSS</button>
+    </div>
+    <div class="diff-view" id="migrate-diff" style="max-height:300px"></div>
+    <div id="migrate-status" class="push-status" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeMigrateModal()">Cancel</button>
+      <button class="btn btn-primary" id="migrate-apply-btn" onclick="applyMigration()" disabled>Apply to Editor</button>
+    </div>
+  </div>
+</div>
+
+<!-- DS/Query Modal -->
+<div class="overlay" id="ds-overlay">
+  <div class="modal large">
+    <h2 id="ds-modal-title">+ New Datasource</h2>
+    <div class="modal-sub">Create a datasource or query on the connected portal. Test-run to preview before saving.</div>
+    <div class="ds-tabs" id="ds-tabs">
+      <button class="ds-tab active" id="ds-tab-datasource" onclick="switchDsTab('datasource')">Datasource</button>
+      <button class="ds-tab" id="ds-tab-query" onclick="switchDsTab('query')">Query (1.18)</button>
+    </div>
+    <div class="ds-form">
+      <div class="form-group">
+        <label>Name</label>
+        <input id="ds-name" type="text" placeholder="e.g. orders_by_state"/>
+      </div>
+      <div class="form-group">
+        <label>Credential / Connection</label>
+        <select id="ds-credential">
+          <option value="">Loading credentials&hellip;</option>
+        </select>
+      </div>
+      <div class="form-group" id="ds-source-wrap">
+        <label>Source Datasource <span style="color:var(--text-dim);font-weight:400">(query mode)</span></label>
+        <select id="ds-source">
+          <option value="">Select a datasource&hellip;</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SQL <span style="color:var(--text-dim);font-weight:400">(use :colname for shortcodes)</span></label>
+        <textarea id="ds-sql" placeholder="SELECT * FROM table_name LIMIT 100"></textarea>
+      </div>
+      <div class="ds-preview" id="ds-preview">
+        <div class="ds-preview-empty">Click <strong>Test Run</strong> to preview the first 5 rows.</div>
+      </div>
+    </div>
+    <div class="modal-actions" style="align-items:center">
+      <span id="ds-status" class="ds-status info"></span>
+      <button class="btn btn-ghost" onclick="closeDsModal()">Cancel</button>
+      <button class="btn btn-ghost" id="ds-test-btn" onclick="testDsRun()">Test Run</button>
+      <button class="btn btn-primary" id="ds-save-btn" onclick="saveDs()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shortcode autocomplete popup (single shared instance) -->
+<div id="sc-popup"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+var allBlocks       = [];
+var filteredBlocks  = [];
+var currentBlock    = null;
+var isDirty         = false;
+var isAIView        = false;
+var chatHistory     = [];
+var pendingSwitch   = null;
+var monacoHTML      = null;
+var monacoCSS       = null;
+var monacoChanging  = false;
+var blockDataContext = null;
+var savedPortals    = [];
+var activePortalIdx = -1;
+var editingPortalIdx = -1;
+var activeTypeFilter = null;   // currently selected block type filter
+
+var SYSTEM_PROMPT = [
+  'You are an expert developer for Zuar Portal (zPortal). You help users create and edit HTML blocks.',
+  '',
+  'HTML blocks have TWO sections — always output both, clearly labeled:',
+  '',
+  'Section 1 — wrap your HTML+JS in a fenced code block tagged "html":',
+  '```html',
+  '<!-- content between body tags only. No html/head/body tags. JS in <script> tags. -->',
+  '```',
+  '',
+  'Section 2 — wrap your CSS in a fenced code block tagged "css":',
+  '```css',
+  '/* raw CSS rules only. No <style> tags. */',
+  '```',
+  '',
+  'DATA ACCESS inside blocks:',
+  '  const cols = currentBlock?.data?.columns?.map(c => c.name) || [];',
+  '  const rows = currentBlock?.data?.data || [];',
+  '  const records = rows.map(row => Object.fromEntries(cols.map((c,i) => [c, row[i]])));',
+  '',
+  'THEME CSS VARIABLES (always use instead of hardcoded colors):',
+  '  --color-primary, --color-text, --body-bg-color, --header-bg-color, --color-success, --color-danger',
+  '',
+  'AMCHARTS 5 (if needed): never load scripts directly. Always wrap in:',
+  '  window.AMCHARTS_LOADER.load().then(function() { /* am5 code here */ });',
+  '',
+  'If only changing one section, still output BOTH sections completely.',
+  'Keep explanations brief — focus on what changed and why.'
+].join('\n');
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  initMonaco();
+  loadSavedConfig();
+  checkStatus();
+  updateGhPill();
+});
+
+// ── Monaco init ────────────────────────────────────────────────────────────
+function initMonaco() {
+  require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+  require(['vs/editor/editor.main'], function() {
+    var commonOpts = {
+      theme: 'vs-dark',
+      fontSize: 13,
+      fontFamily: "'Cascadia Code','Fira Code','JetBrains Mono','Courier New',monospace",
+      lineHeight: 21,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      wordWrap: 'off',
+      tabSize: 2,
+      insertSpaces: true,
+      formatOnPaste: true,
+      formatOnType: true,
+      matchBrackets: 'always',
+      autoClosingBrackets: 'always',
+      autoClosingQuotes: 'always',
+      folding: true,
+      lineNumbers: 'on',
+      renderWhitespace: 'selection',
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: true,
+    };
+    monacoHTML = monaco.editor.create(ge('monaco-html-wrap'), Object.assign({}, commonOpts, {
+      language: 'html', value: ''
+    }));
+    monacoCSS = monaco.editor.create(ge('monaco-css-wrap'), Object.assign({}, commonOpts, {
+      language: 'css', value: ''
+    }));
+    monacoHTML.onDidChangeModelContent(function() { if (!monacoChanging) markDirty(); });
+    monacoCSS.onDidChangeModelContent(function()  { if (!monacoChanging) markDirty(); });
+  });
+}
+
+// ── Config ─────────────────────────────────────────────────────────────────
+function loadSavedConfig() {
+  fetch('/api/config').then(function(r) { return r.json(); }).then(function(d) {
+    var cfg = d.config || d;
+    savedPortals    = (cfg.portals && cfg.portals.length) ? cfg.portals : [];
+    activePortalIdx = (cfg.active_portal != null) ? cfg.active_portal : -1;
+    renderPortalList();
+    if (activePortalIdx >= 0 && savedPortals[activePortalIdx]) {
+      loadPortalForm(activePortalIdx);
+    }
+    // Load GitHub config from server into localStorage
+    if (cfg.github && (cfg.github.token || cfg.github.owner)) {
+      // config.json always wins — never let stale localStorage override it
+      localStorage.setItem('bb_gh_config', JSON.stringify(cfg.github));
+      updateGhPill();
+    }
+    customRules = (cfg.custom_rules && cfg.custom_rules.length)
+      ? cfg.custom_rules : DEFAULT_RULES.slice();
+    renderRules();
+  }).catch(function() {
+    customRules = DEFAULT_RULES.slice();
+    renderRules();
+  });
+}
+
+function checkStatus() {
+  fetch('/api/status').then(function(r) { return r.json(); }).then(function(d) {
+    if (d.connected) { setConnected(d.portal_url); loadBlocks(); }
+  }).catch(function() {});
+}
+
+// ── Connection ─────────────────────────────────────────────────────────────
+function setConnected(url) {
+  var p = ge('conn-pill');
+  p.textContent = '\u25CF Connected';
+  p.className = 'connected';
+}
+function setDisconnected() {
+  var p = ge('conn-pill');
+  p.textContent = 'Not connected';
+  p.className = 'disconnected';
+}
+
+// ── Block loading ──────────────────────────────────────────────────────────
+function loadBlocks() {
+  ge('block-count').textContent = 'Loading...';
+  fetch('/api/proxy/api/blocks').then(function(r) {
+    if (!r.ok) { ge('block-count').textContent = 'Error ' + r.status; return null; }
+    return r.json();
+  }).then(function(all) {
+    if (!all) return;
+    allBlocks = all.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    buildTypeFilterBar();
+    applyFilters();
+  }).catch(function(e) { ge('block-count').textContent = 'Failed'; });
+}
+
+// ── Block type filter ──────────────────────────────────────────────────────
+function buildTypeFilterBar() {
+  var bar   = ge('type-filter-bar');
+  var types = [];
+  allBlocks.forEach(function(b) {
+    if (b.type && types.indexOf(b.type) === -1) types.push(b.type);
+  });
+  types.sort();
+  bar.innerHTML = types.map(function(t) {
+    var active = activeTypeFilter === t ? ' active' : '';
+    return '<span class="type-pill' + active + '" onclick="toggleTypeFilter(\'' + esc(t) + '\')">' + esc(t) + '</span>';
+  }).join('');
+}
+
+function toggleTypeFilter(type) {
+  activeTypeFilter = (activeTypeFilter === type) ? null : type;
+  buildTypeFilterBar();
+  applyFilters();
+}
+
+function applyFilters() {
+  var q = ge('search-input').value.toLowerCase().trim();
+  filteredBlocks = allBlocks.filter(function(b) {
+    var matchType   = !activeTypeFilter || b.type === activeTypeFilter;
+    var matchSearch = !q || b.name.toLowerCase().indexOf(q) !== -1;
+    return matchType && matchSearch;
+  });
+  renderBlockList();
+}
+
+function filterBlocks(q) { applyFilters(); }
+
+function renderBlockList() {
+  var list = ge('block-list');
+  var total = activeTypeFilter
+    ? allBlocks.filter(function(b) { return b.type === activeTypeFilter; }).length
+    : allBlocks.length;
+  ge('block-count').textContent = filteredBlocks.length + ' / ' + total;
+
+  if (filteredBlocks.length === 0) {
+    list.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-dim)">No blocks found.</div>';
+    return;
+  }
+  list.innerHTML = filteredBlocks.map(function(b) {
+    var active = currentBlock && currentBlock.id === b.id ? ' active' : '';
+    return '<div class="block-item' + active + '" onclick="requestSelectBlock(\'' + b.id + '\')">' +
+           '<span class="bi-dot">&middot;</span>' +
+           '<span class="bi-name" title="' + esc(b.name) + '">' + esc(b.name) + '</span>' +
+           '<span class="bi-type">' + esc(b.type || '') + '</span>' +
+           '</div>';
+  }).join('');
+}
+
+// ── Block select ───────────────────────────────────────────────────────────
+function requestSelectBlock(id) {
+  if (currentBlock && currentBlock.id === id) return;
+  if (chatHistory.length > 0) {
+    pendingSwitch = id;
+    ge('switch-overlay').classList.add('open');
+    return;
+  }
+  doSelectBlock(id);
+}
+
+function confirmSwitch() {
+  closeSwitchWarning();
+  var target = pendingSwitch;
+  pendingSwitch = null;
+  if (target === '__new__') doNewBlock();
+  else if (target) doSelectBlock(target);
+}
+function closeSwitchWarning() { ge('switch-overlay').classList.remove('open'); }
+
+function doSelectBlock(id) {
+  var block = allBlocks.filter(function(b) { return b.id === id; })[0];
+  if (!block) return;
+
+  currentBlock = block;
+  chatHistory  = [];
+  isAIView     = false;
+  // Close history panel when switching blocks
+  ghHistoryOpen = false;
+  ge('gh-history-panel').classList.remove('open');
+
+  var rawHtml = (block.json_data && block.json_data.html) ? block.json_data.html : (block.html || '');
+  var htmlVal = Array.isArray(rawHtml) ? rawHtml.join('\n') : (rawHtml || '');
+  var cssVal  = Array.isArray(block.css) ? block.css.join('\n') : (block.css || '');
+
+  setMonacoValue(monacoHTML, htmlVal);
+  setMonacoValue(monacoCSS, cssVal);
+
+  ge('block-name-input').value = block.name;
+  showEditorContainer();
+  showCodeView();
+  setDirty(false);
+  setSaveStatus('', '');
+  renderBlockList();
+  fetchBlockData(block);
+}
+
+function setMonacoValue(editor, value) {
+  if (!editor) return;
+  monacoChanging = true;
+  editor.setValue(value);
+  monacoChanging = false;
+}
+
+// ── Block data preview ─────────────────────────────────────────────────────
+function fetchBlockData(block) {
+  var dsId = block.data && block.data.__source__;
+  blockDataContext = null;
+  hideDataPreview();
+  if (!dsId) return;
+
+  ge('data-preview').classList.add('has-data');
+  ge('data-preview-meta').textContent = 'Loading...';
+  ge('data-preview-content').innerHTML = '';
+
+  fetch('/api/proxy/api/datasources/' + dsId + '/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filters: {}, queries: [{ columns: ['*'], limit: 5 }] })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    var result = res.results && res.results[0];
+    if (!result) { hideDataPreview(); return; }
+    var columns = (result.columns || []).map(function(c) { return typeof c === 'object' ? c.name : c; });
+    var rows    = result.data || [];
+    blockDataContext = { datasourceId: dsId, columns: columns, rows: rows };
+    renderDataPreview(columns, rows, dsId);
+  })
+  .catch(function() { hideDataPreview(); });
+}
+
+function hideDataPreview() {
+  ge('data-preview').classList.remove('has-data');
+  ge('data-preview-body').classList.remove('open');
+  ge('data-preview-toggle').classList.remove('open');
+}
+function toggleDataPreview() {
+  var body   = ge('data-preview-body');
+  var toggle = ge('data-preview-toggle');
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+function renderDataPreview(columns, rows, dsId) {
+  ge('data-preview-meta').textContent = columns.length + ' cols, ' + rows.length + ' rows (sample)';
+  var html = '<table class="dp-table"><thead><tr>';
+  columns.forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(row) {
+    html += '<tr>';
+    row.forEach(function(cell) {
+      var val = cell === null || cell === undefined ? '<span style="opacity:.4">null</span>' : esc(String(cell));
+      html += '<td>' + val + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  ge('data-preview-content').innerHTML = html;
+  ge('data-preview-body').classList.add('open');
+  ge('data-preview-toggle').classList.add('open');
+}
+
+function showEditorContainer() {
+  ge('empty-state').style.display      = 'none';
+  ge('editor-container').style.display = 'flex';
+}
+function showEmptyState() {
+  ge('empty-state').style.display      = 'flex';
+  ge('editor-container').style.display = 'none';
+}
+
+// ── New block ──────────────────────────────────────────────────────────────
+function newBlock() {
+  if (chatHistory.length > 0) {
+    pendingSwitch = '__new__';
+    ge('switch-overlay').classList.add('open');
+    return;
+  }
+  doNewBlock();
+}
+
+function doNewBlock() {
+  currentBlock = null;
+  chatHistory  = [];
+  isAIView     = true;
+
+  setMonacoValue(monacoHTML, '');
+  setMonacoValue(monacoCSS, '');
+
+  ge('block-name-input').value = '';
+  blockDataContext = null;
+  hideDataPreview();
+  setDirty(false);
+  setSaveStatus('', '');
+
+  ge('chat-messages').innerHTML = '';
+  appendChatMsg('ai', 'Hi! Describe the block you want and I\'ll generate the HTML+JS and CSS for you. Be as specific as you like \u2014 chart type, data, styling, etc.');
+
+  showEditorContainer();
+  showAIView();
+  renderBlockList();
+  setTimeout(function() { ge('chat-input').focus(); }, 50);
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  var tabs = document.querySelectorAll('.tab');
+  tabs[0].classList.toggle('active', tab === 'html');
+  tabs[1].classList.toggle('active', tab === 'css');
+  ge('monaco-html-wrap').classList.toggle('active', tab === 'html');
+  ge('monaco-css-wrap').classList.toggle('active',  tab === 'css');
+  // Force Monaco layout recalculation after display change
+  setTimeout(function() {
+    if (monacoHTML) monacoHTML.layout();
+    if (monacoCSS)  monacoCSS.layout();
+  }, 10);
+}
+
+// ── AI view ────────────────────────────────────────────────────────────────
+function toggleAI() {
+  if (isAIView) showCodeView(); else showAIView();
+}
+function showAIView() {
+  isAIView = true;
+  ge('code-view').style.display = 'none';
+  ge('ai-view').classList.add('active');
+  ge('btn-ai-toggle').classList.add('active-ai');
+  ge('btn-ai-toggle').textContent = '\u2736 AI \u2713';
+  setTimeout(function() { ge('chat-input').focus(); }, 50);
+}
+function showCodeView() {
+  isAIView = false;
+  ge('code-view').style.display = 'flex';
+  ge('ai-view').classList.remove('active');
+  ge('btn-ai-toggle').classList.remove('active-ai');
+  ge('btn-ai-toggle').textContent = '\u2736 AI';
+  setTimeout(function() {
+    if (monacoHTML) monacoHTML.layout();
+    if (monacoCSS)  monacoCSS.layout();
+  }, 10);
+}
+
+// ── Dirty state ────────────────────────────────────────────────────────────
+function markDirty() { setDirty(true); }
+function setDirty(dirty) {
+  isDirty = dirty;
+  ge('btn-save').disabled = !dirty;
+  if (dirty) setSaveStatus('\u25CF Unsaved', 'unsaved');
+}
+function setSaveStatus(text, cls) {
+  var s = ge('save-status');
+  s.textContent = text;
+  s.className   = cls || '';
+}
+document.getElementById('block-name-input').addEventListener('input', markDirty);
+
+// ── Save ───────────────────────────────────────────────────────────────────
+function saveBlock() {
+  if (!monacoHTML || !monacoCSS) { setSaveStatus('Editor not ready', 'error'); return; }
+  var name    = ge('block-name-input').value.trim();
+  var htmlVal = monacoHTML.getValue();
+  var cssVal  = monacoCSS.getValue();
+
+  if (!name) { setSaveStatus('Name required', 'error'); return; }
+
+  setSaveStatus('Saving...', 'saving');
+  ge('btn-save').disabled = true;
+
+  var payload = {
+    name:      name,
+    type:      (currentBlock && currentBlock.type) || 'html',
+    data:      (currentBlock && currentBlock.data)      || {},
+    tags:      (currentBlock && currentBlock.tags)      || [],
+    access:    (currentBlock && currentBlock.access)    || {},
+    json_data: Object.assign({}, (currentBlock && currentBlock.json_data) || {}, { html: [htmlVal] }),
+    css:       cssVal ? [cssVal] : []
+  };
+
+  var url    = currentBlock ? '/api/proxy/api/blocks/' + currentBlock.id : '/api/proxy/api/blocks';
+  var method = currentBlock ? 'PUT' : 'POST';
+
+  fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (res.ok) {
+        var updated = res.data;
+        currentBlock = updated;
+        var idx = allBlocks.findIndex(function(b) { return b.id === updated.id; });
+        if (idx !== -1) allBlocks[idx] = updated; else allBlocks.push(updated);
+        allBlocks.sort(function(a, b) { return a.name.localeCompare(b.name); });
+        applyFilters();
+        setSaveStatus('Saved \u2713', 'saved');
+        setDirty(false);
+        // Auto-push to GitHub
+        var action = method === 'POST' ? 'created' : 'updated';
+        autoPushToGitHub(updated, '[' + action + '] ' + updated.name);
+      } else {
+        setSaveStatus((res.data && res.data.detail) || 'Error', 'error');
+        ge('btn-save').disabled = false;
+      }
+    })
+    .catch(function() { setSaveStatus('Network error', 'error'); ge('btn-save').disabled = false; });
+}
+
+// ── Duplicate ──────────────────────────────────────────────────────────────
+function duplicateBlock() {
+  if (!currentBlock) return;
+  var payload = {
+    name:      currentBlock.name + ' (copy)', type: currentBlock.type || 'html',
+    data:      currentBlock.data      || {},
+    tags:      currentBlock.tags      || [],
+    access:    currentBlock.access    || {},
+    json_data: currentBlock.json_data || {},
+    css:       currentBlock.css       || []
+  };
+  fetch('/api/proxy/api/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(function(r) { return r.json(); })
+    .then(function(nb) {
+      allBlocks.push(nb);
+      allBlocks.sort(function(a, b) { return a.name.localeCompare(b.name); });
+      applyFilters();
+      doSelectBlock(nb.id);
+    }).catch(function() {});
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+function confirmDelete() {
+  if (!currentBlock) return;
+  ge('confirm-msg').textContent = 'Delete "' + currentBlock.name + '"? This cannot be undone.';
+  ge('confirm-overlay').classList.add('open');
+}
+function closeConfirm() { ge('confirm-overlay').classList.remove('open'); }
+function deleteBlock() {
+  if (!currentBlock) return;
+  closeConfirm();
+  var id = currentBlock.id;
+  fetch('/api/proxy/api/blocks/' + id, { method: 'DELETE' })
+    .then(function(r) {
+      if (r.ok) {
+        allBlocks      = allBlocks.filter(function(b) { return b.id !== id; });
+        currentBlock   = null;
+        chatHistory    = [];
+        applyFilters();
+        showEmptyState();
+      }
+    }).catch(function() {});
+}
+
+// ── AI Chat ────────────────────────────────────────────────────────────────
+function clearChat() { chatHistory = []; ge('chat-messages').innerHTML = ''; }
+function chatKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }
+function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
+
+function sendChat() {
+  var input  = ge('chat-input');
+  var prompt = input.value.trim();
+  if (!prompt) return;
+  var btn = ge('btn-send');
+  input.value = '';
+  input.style.height = 'auto';
+  btn.disabled = true;
+  appendChatMsg('user', prompt);
+
+  var currentHTML = monacoHTML ? monacoHTML.getValue() : '';
+  var currentCSS  = monacoCSS  ? monacoCSS.getValue()  : '';
+  var blockName   = ge('block-name-input').value.trim() || 'New Block';
+
+  var dataSection = '';
+  if (blockDataContext && blockDataContext.columns && blockDataContext.columns.length) {
+    dataSection = '\n\n--- DATASOURCE DATA ---' +
+      '\nDatasource ID: ' + blockDataContext.datasourceId +
+      '\nColumns: ' + blockDataContext.columns.join(', ') +
+      '\nSample rows (up to 5):';
+    blockDataContext.rows.forEach(function(row, i) {
+      var obj = {};
+      blockDataContext.columns.forEach(function(col, j) { obj[col] = row[j]; });
+      dataSection += '\n  Row ' + (i+1) + ': ' + JSON.stringify(obj);
+    });
+    dataSection += '\n--- END DATASOURCE DATA ---';
+  }
+
+  var userMsgWithCtx = prompt +
+    '\n\n--- CURRENT BLOCK CODE ---' +
+    '\nBlock name: ' + blockName +
+    '\n\n[HTML + JS]\n' + (currentHTML || '(empty)') +
+    '\n\n[CSS]\n' + (currentCSS || '(empty)') +
+    '\n--- END CURRENT CODE ---' + dataSection;
+
+  chatHistory.push({ role: 'user', content: prompt });
+  var thinkId = appendThinking();
+
+  fetch('/api/anthropic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      max_tokens: 4096,
+      system: buildSystemPrompt(),
+      messages: [{ role: 'user', content: userMsgWithCtx }]
+    })
+  })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+  .then(function(res) {
+    removeThinking(thinkId);
+    if (!res.ok) {
+      var errMsg = (res.data.error && res.data.error.message) || res.data.error || 'API error';
+      appendChatMsg('ai', 'Error: ' + errMsg);
+      chatHistory.push({ role: 'assistant', content: '[error]' });
+      return;
+    }
+    var aiText = '';
+    var content = res.data.content || [];
+    for (var i = 0; i < content.length; i++) {
+      if (content[i].type === 'text') { aiText = content[i].text; break; }
+    }
+    chatHistory.push({ role: 'assistant', content: aiText });
+    appendChatMsg('ai', aiText);
+    var extracted = extractCode(aiText);
+    if (extracted.html !== null || extracted.css !== null) {
+      if (extracted.html !== null) setMonacoValue(monacoHTML, extracted.html);
+      if (extracted.css  !== null) setMonacoValue(monacoCSS,  extracted.css);
+      markDirty();
+    }
+  })
+  .catch(function(e) { removeThinking(thinkId); appendChatMsg('ai', 'Network error: ' + e.message); })
+  .finally(function() { btn.disabled = false; ge('chat-input').focus(); });
+}
+
+function buildSystemPrompt() {
+  var base = SYSTEM_PROMPT;
+  var enabled = customRules.filter(function(r) { return r.enabled && r.text && r.text.trim(); });
+  if (enabled.length) {
+    base += '\n\n# CUSTOM RULES — ALWAYS FOLLOW THESE\n';
+    base += enabled.map(function(r) { return '- ' + r.text; }).join('\n');
+  }
+  return base;
+}
+
+function extractCode(text) {
+  var html = null, css = null;
+  var htmlMatch = text.match(/```html[\s\S]*?\n([\s\S]*?)```/i);
+  var cssMatch  = text.match(/```css[\s\S]*?\n([\s\S]*?)```/i);
+  if (htmlMatch) html = htmlMatch[1].replace(/\s+$/, '');
+  if (cssMatch)  css  = cssMatch[1].replace(/\s+$/, '');
+  return { html: html, css: css };
+}
+
+function appendChatMsg(role, text) {
+  var wrap   = ge('chat-messages');
+  var div    = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  var avatar = document.createElement('div');
+  avatar.className   = 'msg-avatar';
+  avatar.textContent = role === 'user' ? '\uD83D\uDC64' : '\u2736';
+  var bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatMsg(text);
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function appendThinking() {
+  var id   = 'thinking-' + Date.now();
+  var wrap = ge('chat-messages');
+  var div  = document.createElement('div');
+  div.className = 'chat-msg ai';
+  div.id = id;
+  var avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = '\u2736';
+  var bubble = document.createElement('div');
+  bubble.className = 'msg-bubble msg-thinking';
+  bubble.innerHTML  = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return id;
+}
+function removeThinking(id) { var n = document.getElementById(id); if (n) n.parentNode.removeChild(n); }
+
+function formatMsg(text) {
+  var s = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, function(_, code) {
+    return '<pre><code>' + code.replace(/\s+$/, '') + '</code></pre>';
+  });
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.split('\n\n').map(function(p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+  return s;
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────
+function openSettings() {
+  ge('main').style.display = 'none';
+  ge('settings-panel').classList.add('open');
+  ge('btn-settings').style.display = 'none';
+  ge('btn-back-from-settings').style.display = '';
+  switchSettingsTab('portals');
+  loadSkillsInfo();
+  loadGhSettings();
+}
+function closeSettings() {
+  ge('main').style.display = 'flex';
+  ge('settings-panel').classList.remove('open');
+  ge('btn-settings').style.display = '';
+  ge('btn-back-from-settings').style.display = 'none';
+}
+function switchSettingsTab(tab) {
+  var tabs  = ['portals', 'github', 'skills', 'rules'];
+  var stabs = document.querySelectorAll('.stab');
+  tabs.forEach(function(t, i) {
+    var panel = ge('stab-' + t);
+    if (panel) panel.classList.toggle('active', t === tab);
+    if (stabs[i]) stabs[i].classList.toggle('active', t === tab);
+  });
+}
+
+// ── Portals tab ────────────────────────────────────────────────────────────
+function renderPortalList() {
+  var list = ge('portal-list');
+  if (!savedPortals.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 4px;">No portals saved yet.</div>';
+    return;
+  }
+  list.innerHTML = savedPortals.map(function(p, i) {
+    var isActive = i === activePortalIdx;
+    var shortUrl = (p.portal_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return '<div class="portal-item' + (isActive ? ' active-portal' : '') + '" onclick="selectPortalItem(' + i + ')">' +
+      '<span class="pi-dot"></span>' +
+      '<span class="pi-url" title="' + esc(p.portal_url) + '">' + esc(shortUrl) + '</span>' +
+      '<button class="pi-del" onclick="deletePortal(event,' + i + ')" title="Remove">&times;</button>' +
+      '</div>';
+  }).join('');
+}
+
+function selectPortalItem(idx) {
+  editingPortalIdx = idx;
+  loadPortalForm(idx);
+  document.querySelectorAll('.portal-item').forEach(function(el, i) {
+    el.classList.toggle('active-portal', i === activePortalIdx);
+    el.style.outline = (i === idx && i !== activePortalIdx) ? '1px solid var(--border2)' : '';
+  });
+}
+
+function loadPortalForm(idx) {
+  var p = savedPortals[idx];
+  if (!p) return;
+  ge('cfg-portal-url').value    = p.portal_url    || '';
+  ge('cfg-api-key').value       = p.api_key        || '';
+  ge('cfg-user-id').value       = p.user_id        || '';
+  ge('cfg-anthropic-key').value = p.anthropic_key  || '';
+  setPortalFormMsg('');
+}
+
+function addNewPortal() {
+  editingPortalIdx = -1;
+  ge('cfg-portal-url').value    = '';
+  ge('cfg-api-key').value       = '';
+  ge('cfg-user-id').value       = '';
+  ge('cfg-anthropic-key').value = '';
+  setPortalFormMsg('');
+  ge('cfg-portal-url').focus();
+}
+
+function deletePortal(e, idx) {
+  e.stopPropagation();
+  savedPortals.splice(idx, 1);
+  if (activePortalIdx === idx)       activePortalIdx = -1;
+  else if (activePortalIdx > idx)    activePortalIdx--;
+  if (editingPortalIdx === idx)     { editingPortalIdx = -1; addNewPortal(); }
+  else if (editingPortalIdx > idx)   editingPortalIdx--;
+  persistConfig(function() { renderPortalList(); });
+}
+
+function savePortalForm() {
+  var url    = ge('cfg-portal-url').value.trim();
+  var apiKey = ge('cfg-api-key').value.trim();
+  var userId = ge('cfg-user-id').value.trim();
+  var aKey   = ge('cfg-anthropic-key').value.trim();
+  if (!url || !apiKey || !userId) { setPortalFormMsg('URL, API key, and User ID are required.', 'err'); return; }
+  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: aKey };
+  if (editingPortalIdx >= 0) {
+    savedPortals[editingPortalIdx] = entry;
+  } else {
+    savedPortals.push(entry);
+    editingPortalIdx = savedPortals.length - 1;
+  }
+  persistConfig(function() {
+    renderPortalList();
+    setPortalFormMsg('Saved \u2713', 'ok');
+    setTimeout(function() { setPortalFormMsg(''); }, 2000);
+  });
+}
+
+function connectSelectedPortal() {
+  var url    = ge('cfg-portal-url').value.trim();
+  var apiKey = ge('cfg-api-key').value.trim();
+  var userId = ge('cfg-user-id').value.trim();
+  var aKey   = ge('cfg-anthropic-key').value.trim();
+  if (!url || !apiKey || !userId) { setPortalFormMsg('URL, API key, and User ID are required.', 'err'); return; }
+  var entry = { portal_url: url, api_key: apiKey, user_id: userId, anthropic_key: aKey };
+  if (editingPortalIdx >= 0) {
+    savedPortals[editingPortalIdx] = entry;
+    activePortalIdx = editingPortalIdx;
+  } else {
+    savedPortals.push(entry);
+    editingPortalIdx = savedPortals.length - 1;
+    activePortalIdx  = editingPortalIdx;
+  }
+  setPortalFormMsg('Connecting...', 'info');
+  ge('btn-portal-connect').disabled = true;
+
+  persistConfig(function() {
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal_url: url, api_key: apiKey, user_id: userId })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      ge('btn-portal-connect').disabled = false;
+      if (res.ok && res.data.ok) {
+        setConnected(url);
+        localStorage.setItem('bb_portal_url', url);
+        renderPortalList();
+        setPortalFormMsg('Connected \u2713', 'ok');
+        setTimeout(function() { closeSettings(); loadBlocks(); }, 600);
+      } else {
+        setDisconnected();
+        setPortalFormMsg(res.data.error || 'Login failed.', 'err');
+      }
+    })
+    .catch(function() {
+      ge('btn-portal-connect').disabled = false;
+      setPortalFormMsg('Could not reach server.', 'err');
+    });
+  });
+}
+
+function setPortalFormMsg(text, cls) {
+  var m = ge('portal-form-msg');
+  m.textContent = text;
+  m.className   = cls || '';
+}
+
+function persistConfig(cb) {
+  fetch('/api/config').then(function(r) { return r.json(); }).then(function(d) {
+    var cfg = d.config || d;
+    cfg.portals       = savedPortals;
+    cfg.active_portal = activePortalIdx;
+    cfg.custom_rules  = customRules;
+    // Persist GitHub config from localStorage into config.json
+    try {
+      var gh = JSON.parse(localStorage.getItem('bb_gh_config') || '{}');
+      if (gh.token || gh.owner || gh.repo) cfg.github = gh;
+    } catch(e) {}
+    var active = savedPortals[activePortalIdx];
+    if (active) {
+      cfg.portal_url    = active.portal_url   || '';
+      cfg.api_key       = active.api_key       || '';
+      cfg.user_id       = active.user_id       || '';
+      cfg.anthropic_key = active.anthropic_key || cfg.anthropic_key || '';
+      cfg.portal = {
+        url:    active.portal_url || '',
+        apiKey: active.api_key    || '',
+        userId: active.user_id    || ''
+      };
+      cfg.anthropic = { apiKey: active.anthropic_key || '' };
+    }
+    return fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg)
+    });
+  }).then(function() { if (cb) cb(); }).catch(function() { if (cb) cb(); });
+}
+
+// ── Skills tab ─────────────────────────────────────────────────────────────
+function loadSkillsInfo() {
+  ge('skills-list').innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Loading...</div>';
+  ge('skills-total').textContent = '';
+  fetch('/api/skills')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var skills = d.skills || [];
+      var totalTokens = skills.reduce(function(sum, s) { return sum + (s.tokens || 0); }, 0);
+      var rows = skills.map(function(s) {
+        return '<div class="skill-row">' +
+          '<span class="skill-name">' + esc(s.name) + '</span>' +
+          '<span class="skill-path">skills/' + esc(s.filename) + '</span>' +
+          '<span class="skill-badge loaded">Loaded</span>' +
+          '<span class="skill-tokens">~' + (s.tokens || 0).toLocaleString() + ' tk</span>' +
+          '</div>';
+      });
+      ge('skills-list').innerHTML = rows.length ? rows.join('') :
+        '<div style="font-size:12px;color:var(--text-dim);">No skills found in /skills folder.</div>';
+      ge('skills-total').textContent = 'Total: ~' + totalTokens.toLocaleString() + ' tokens';
+    })
+    .catch(function() {
+      ge('skills-list').innerHTML = '<div style="font-size:12px;color:var(--red);">Failed to load skills.</div>';
+    });
+}
+
+// ── Rules tab ──────────────────────────────────────────────────────────────
+var DEFAULT_RULES = [
+  { text: 'Always use optional chaining when reading currentBlock: currentBlock?.data?.columns, currentBlock?.data?.data. Never assume the data is populated.', enabled: true },
+  { text: 'Rows in currentBlock.data.data are positional arrays, not objects. Always use cols.indexOf(\'column_name\') to get values — never row.column_name.', enabled: true },
+  { text: 'Always implement the reactive pattern: register zPortal.dataSource.on(\'load\', dsId, payload => {...}) so the block re-renders when filters change.', enabled: true },
+  { text: 'Never load amCharts scripts directly in a chart block. Always wrap all am5 code in window.AMCHARTS_LOADER.load().then(function() {...}).', enabled: true },
+  { text: 'Always dispose of the amCharts root before re-rendering: if (root) root.dispose(); at the top of the render function.', enabled: true },
+  { text: 'Add a const DEBUG = true flag at the top of every block. Wrap all console.log calls in if (DEBUG) {...}.', enabled: true },
+  { text: 'Always use CSS variables (--color-primary, --color-text, --body-bg-color, --color-success, --color-danger) instead of hardcoded colors.', enabled: true },
+  { text: 'Always add a visible error message in the block UI if data fails to load — never fail silently.', enabled: true }
+];
+
+var customRules  = [];
+var dragSrcIndex = null;
+
+function renderRules() {
+  var list = ge('rules-list');
+  if (!customRules.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--text-dim);padding:8px 0;">No rules yet.</div>';
+    return;
+  }
+  list.innerHTML = customRules.map(function(rule, i) {
+    return '<div class="rule-item" draggable="true" data-idx="' + i + '"' +
+           ' ondragstart="ruleDragStart(event,' + i + ')" ondragover="ruleDragOver(event,' + i + ')"' +
+           ' ondragleave="ruleDragLeave(event)" ondrop="ruleDrop(event,' + i + ')" ondragend="ruleDragEnd(event)">' +
+           '<span class="rule-drag" title="Drag to reorder">&#8942;&#8942;</span>' +
+           '<input class="rule-enabled" type="checkbox"' + (rule.enabled ? ' checked' : '') +
+           ' onchange="ruleToggle(' + i + ',this.checked)"/>' +
+           '<span class="rule-text' + (rule.enabled ? '' : ' disabled') + '">' + esc(rule.text) + '</span>' +
+           '<button class="rule-del" onclick="removeRule(' + i + ')">&times;</button>' +
+           '</div>';
+  }).join('');
+}
+
+function addRule() {
+  var input = ge('rule-new-input');
+  var text  = input.value.trim();
+  if (!text) return;
+  customRules.push({ text: text, enabled: true });
+  input.value = '';
+  renderRules();
+}
+function ruleInputKeydown(e) { if (e.key === 'Enter') { e.preventDefault(); addRule(); } }
+function removeRule(idx) { customRules.splice(idx, 1); renderRules(); }
+function ruleToggle(idx, enabled) { customRules[idx].enabled = enabled; renderRules(); }
+function ruleDragStart(e, idx) { dragSrcIndex = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function ruleDragOver(e, idx) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.rule-item').forEach(function(el) { el.classList.remove('drag-over'); }); e.currentTarget.classList.add('drag-over'); }
+function ruleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function ruleDrop(e, idx) { e.preventDefault(); if (dragSrcIndex === null || dragSrcIndex === idx) return; var moved = customRules.splice(dragSrcIndex, 1)[0]; customRules.splice(idx, 0, moved); dragSrcIndex = null; renderRules(); }
+function ruleDragEnd(e) { dragSrcIndex = null; document.querySelectorAll('.rule-item').forEach(function(el) { el.classList.remove('dragging', 'drag-over'); }); }
+function saveRules() { persistConfig(function() { var m = ge('rules-save-msg'); m.textContent = 'Rules saved \u2713'; m.className = 'ok'; setTimeout(function() { m.textContent = ''; m.className = ''; }, 2000); }); }
+
+// ── Modal close on backdrop ────────────────────────────────────────────────
+ge('confirm-overlay').addEventListener('click',  function(e) { if (e.target === ge('confirm-overlay'))  closeConfirm(); });
+ge('switch-overlay').addEventListener('click',   function(e) { if (e.target === ge('switch-overlay'))   closeSwitchWarning(); });
+ge('gh-push-overlay').addEventListener('click',  function(e) { if (e.target === ge('gh-push-overlay'))  closeGhPushModal(); });
+ge('gh-restore-overlay').addEventListener('click', function(e) { if (e.target === ge('gh-restore-overlay')) closeGhRestoreModal(); });
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function ge(id) { return document.getElementById(id); }
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     1.17 / 1.18 SUPPORT, SHORTCODES, MIGRATION, DS/QUERY CREATION
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Version state ─────────────────────────────────────────────────────────
+  var BB = window.BB = window.BB || {};
+  BB.detectedVersion = null;     // string from server: '1.17' | '1.18' | 'unknown'
+  BB.rawVersion      = null;     // raw version string from /api/version
+  BB.registry        = {         // shortcode registry
+    blocks: [], datasources: [], queries: [], credentials: [], columns: []
+  };
+
+  // Effective version honours per-portal override
+  BB.activeVersion = function() {
+    var override = (window.savedPortals && window.activePortalIdx >= 0 && window.savedPortals[window.activePortalIdx])
+                     ? window.savedPortals[window.activePortalIdx].version_override : null;
+    if (override === '1.17' || override === '1.18') return override;
+    return BB.detectedVersion || 'unknown';
+  };
+
+  // Refresh version pill in topbar
+  BB.updateVersionPill = function() {
+    var pill = document.getElementById('version-pill');
+    if (!pill) return;
+    var v   = BB.activeVersion();
+    var det = BB.detectedVersion;
+    pill.classList.remove('v117','v118','unknown');
+    if (v === '1.17') { pill.classList.add('v117'); pill.textContent = 'v1.17'; }
+    else if (v === '1.18') { pill.classList.add('v118'); pill.textContent = 'v1.18'; }
+    else { pill.classList.add('unknown'); pill.textContent = 'v?'; }
+    var override = (window.savedPortals && window.activePortalIdx >= 0 && window.savedPortals[window.activePortalIdx])
+                     ? window.savedPortals[window.activePortalIdx].version_override : null;
+    pill.title = 'Detected: ' + (det || 'unknown') +
+                 (override ? '  ·  Override: ' + override : '') +
+                 (BB.rawVersion ? '  ·  Raw: ' + BB.rawVersion : '') +
+                 '\nClick to change';
+  };
+
+  // ── Auto-detect on connect (called from BB.afterConnect()) ────────────────
+  BB.detectVersion = function(force) {
+    return fetch('/api/portal-version' + (force ? '?refresh=1' : ''))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.ok) {
+          BB.detectedVersion = d.version || 'unknown';
+          BB.rawVersion      = d.raw || null;
+          // Stash on the active portal entry too
+          if (window.savedPortals && window.activePortalIdx >= 0 && window.savedPortals[window.activePortalIdx]) {
+            window.savedPortals[window.activePortalIdx].detected_version = d.version;
+            window.savedPortals[window.activePortalIdx].detected_version_raw = d.raw || null;
+          }
+        }
+        BB.updateVersionPill();
+        BB.refreshMigrateButton();
+        BB.updateDsTabs();
+        return d;
+      })
+      .catch(function() { BB.updateVersionPill(); });
+  };
+
+  // ── Shortcode registry — fetched on connect ────────────────────────────────
+  BB.loadRegistry = function() {
+    var p = [];
+    // Blocks (already loaded as window.allBlocks, but refresh anyway)
+    p.push(fetch('/api/proxy/api/blocks?only_names=false').then(function(r){return r.ok ? r.json() : [];}).catch(function(){return [];}));
+    // Datasources
+    p.push(fetch('/api/proxy/api/datasources').then(function(r){return r.ok ? r.json() : [];}).catch(function(){return [];}));
+    // Queries (1.18 only)
+    p.push(BB.activeVersion() === '1.18'
+      ? fetch('/api/proxy/api/queries').then(function(r){return r.ok ? r.json() : {};}).catch(function(){return {};})
+      : Promise.resolve({}));
+    // Credentials
+    p.push(fetch('/api/proxy/api/credentials').then(function(r){return r.ok ? r.json() : [];}).catch(function(){return [];}));
+
+    return Promise.all(p).then(function(results) {
+      BB.registry.blocks      = (results[0] || []).map(function(b){ return { id: b.id, name: b.name, type: b.type, iid: 'content-1-' + b.id }; });
+      BB.registry.datasources = (results[1] || []).map(function(d){ return { id: d.id, name: d.name }; });
+      var qList = results[2] && results[2].items ? results[2].items : (Array.isArray(results[2]) ? results[2] : []);
+      BB.registry.queries     = qList.map(function(q){ return { id: q.id, raw_sql: (q.raw_sql || '').slice(0, 80) }; });
+      BB.registry.credentials = (results[3] || []).map(function(c){ return { id: c.id, name: c.name, type: c.type }; });
+      return BB.registry;
+    });
+  };
+
+  // ── Build the flat suggestions list (called every time popup opens) ───────
+  BB.buildSuggestions = function() {
+    var out = [];
+    BB.registry.blocks.forEach(function(b) {
+      out.push({ cat: 'Block IID', icon: '\u25A0', label: b.name, value: b.iid, hint: b.iid });
+      out.push({ cat: 'Block Name', icon: '\u25A1', label: b.name, value: b.name, hint: b.id.slice(0, 8) });
+      out.push({ cat: 'Block ID', icon: '\u00B7', label: b.name, value: b.id, hint: b.id.slice(0, 8) });
+    });
+    BB.registry.datasources.forEach(function(d) {
+      out.push({ cat: 'Datasource ID', icon: '\u25C9', label: d.name, value: d.id, hint: d.id.slice(0, 8) });
+      out.push({ cat: 'Datasource Name', icon: '\u25CC', label: d.name, value: d.name, hint: '' });
+    });
+    BB.registry.queries.forEach(function(q) {
+      out.push({ cat: 'Query ID', icon: '\u26A1', label: (q.raw_sql || q.id), value: q.id, hint: q.id.slice(0, 8) });
+    });
+    BB.registry.credentials.forEach(function(c) {
+      out.push({ cat: 'Credential ID', icon: '\u26BF', label: c.name + ' (' + c.type + ')', value: c.id, hint: '' });
+    });
+    // Columns of the active block's first datasource
+    if (window.blockDataContext && window.blockDataContext.columns) {
+      window.blockDataContext.columns.forEach(function(col) {
+        out.push({ cat: 'Current Column', icon: '\u25B8', label: col, value: col, hint: 'this block' });
+      });
+    }
+    return out;
+  };
+
+  BB.filterSuggestions = function(query) {
+    var q = (query || '').toLowerCase();
+    var all = BB.buildSuggestions();
+    if (!q) return all.slice(0, 50);
+    return all.filter(function(s) {
+      return s.label.toLowerCase().indexOf(q) !== -1
+          || s.value.toLowerCase().indexOf(q) !== -1
+          || s.cat.toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 50);
+  };
+
+  // ── Shortcode popup ───────────────────────────────────────────────────────
+  // Driver: holds context for the active text source (input/textarea/Monaco)
+  BB.popupCtx = null;
+
+  BB.renderPopup = function(items) {
+    var pop = document.getElementById('sc-popup');
+    if (!items.length) {
+      pop.innerHTML = '<div class="sc-empty">No matches. Type :<em>name</em> to filter.</div>';
+      return;
+    }
+    // Group by category
+    var byCat = {}; var order = [];
+    items.forEach(function(it) {
+      if (!byCat[it.cat]) { byCat[it.cat] = []; order.push(it.cat); }
+      byCat[it.cat].push(it);
+    });
+    var html = '';
+    var globalIdx = 0;
+    order.forEach(function(cat) {
+      html += '<div class="sc-section">';
+      html += '<div class="sc-section-label">' + esc(cat) + '</div>';
+      byCat[cat].forEach(function(it) {
+        var activeCls = globalIdx === BB.popupCtx.cursor ? ' active' : '';
+        html += '<div class="sc-item' + activeCls + '" data-idx="' + globalIdx + '">' +
+                  '<span class="sc-item-icon">' + esc(it.icon) + '</span>' +
+                  '<span class="sc-item-label">' + esc(it.label) + '</span>' +
+                  '<span class="sc-item-value">' + esc(it.hint || it.value) + '</span>' +
+                '</div>';
+        globalIdx++;
+      });
+      html += '</div>';
+    });
+    pop.innerHTML = html;
+    BB.popupCtx.flatItems = items;
+    // Wire click on items
+    pop.querySelectorAll('.sc-item').forEach(function(el) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        var i = parseInt(el.getAttribute('data-idx'), 10);
+        BB.acceptSuggestion(i);
+      });
+    });
+  };
+
+  BB.openPopup = function(targetEl, anchorRect, contextSpec) {
+    BB.popupCtx = Object.assign({ target: targetEl, query: '', cursor: 0, flatItems: [] }, contextSpec || {});
+    var pop = document.getElementById('sc-popup');
+    pop.classList.add('open');
+    var items = BB.filterSuggestions('');
+    BB.renderPopup(items);
+    // Position: prefer anchorRect.top below caret
+    var top  = anchorRect.bottom + 4;
+    var left = anchorRect.left;
+    // Clamp to viewport
+    var maxLeft = window.innerWidth - 400;
+    if (left > maxLeft) left = Math.max(8, maxLeft);
+    if (top + 280 > window.innerHeight) top = Math.max(8, anchorRect.top - 280 - 4);
+    pop.style.top  = top + 'px';
+    pop.style.left = left + 'px';
+  };
+
+  BB.closePopup = function() {
+    var pop = document.getElementById('sc-popup');
+    if (pop) pop.classList.remove('open');
+    BB.popupCtx = null;
+  };
+
+  BB.popupOpen = function() {
+    var pop = document.getElementById('sc-popup');
+    return pop && pop.classList.contains('open');
+  };
+
+  BB.movePopupCursor = function(delta) {
+    if (!BB.popupCtx || !BB.popupCtx.flatItems) return;
+    var n = BB.popupCtx.flatItems.length;
+    if (!n) return;
+    BB.popupCtx.cursor = (BB.popupCtx.cursor + delta + n) % n;
+    BB.renderPopup(BB.popupCtx.flatItems);
+    // Scroll active into view
+    var pop = document.getElementById('sc-popup');
+    var active = pop.querySelector('.sc-item.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  };
+
+  BB.acceptSuggestion = function(idx) {
+    if (!BB.popupCtx || !BB.popupCtx.flatItems) return;
+    if (idx == null) idx = BB.popupCtx.cursor;
+    var item = BB.popupCtx.flatItems[idx];
+    if (!item) return;
+    // Use the per-context inserter
+    if (BB.popupCtx.insert) BB.popupCtx.insert(item.value);
+    BB.closePopup();
+  };
+
+  // ── Wiring popup into <input>/<textarea> elements ─────────────────────────
+  BB.attachToTextField = function(el) {
+    if (!el || el._bbScAttached) return;
+    el._bbScAttached = true;
+
+    function maybeOpen() {
+      var pos   = el.selectionStart || 0;
+      var val   = el.value || '';
+      // Look back from cursor for the trigger ":"
+      var i = pos - 1;
+      while (i >= 0 && /[A-Za-z0-9_\-]/.test(val[i])) i--;
+      if (i < 0 || val[i] !== ':') { BB.closePopup(); return; }
+      // Don't trigger if preceded by alphanumeric (e.g. URL "http://" or "::")
+      if (i > 0 && /[A-Za-z0-9_]/.test(val[i - 1])) { BB.closePopup(); return; }
+      var query = val.slice(i + 1, pos);
+
+      // Open or update popup
+      if (!BB.popupOpen()) {
+        var rect = BB.caretRectForInput(el);
+        BB.openPopup(el, rect, {
+          startIdx: i, // location of the leading ':'
+          insert: function(value) {
+            var before = val.slice(0, i);
+            var after  = val.slice(pos);
+            el.value   = before + value + after;
+            var newPos = before.length + value.length;
+            el.setSelectionRange(newPos, newPos);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+      }
+      var items = BB.filterSuggestions(query);
+      BB.popupCtx.cursor = 0;
+      BB.popupCtx.query  = query;
+      BB.renderPopup(items);
+    }
+
+    el.addEventListener('input',  maybeOpen);
+    el.addEventListener('keyup',  function(e) {
+      if (['ArrowUp','ArrowDown','Enter','Escape','Tab'].indexOf(e.key) !== -1) return;
+      maybeOpen();
+    });
+    el.addEventListener('keydown', function(e) {
+      if (!BB.popupOpen()) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); BB.movePopupCursor(1); }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); BB.movePopupCursor(-1); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); BB.acceptSuggestion(); }
+      else if (e.key === 'Escape') { e.preventDefault(); BB.closePopup(); }
+    });
+    el.addEventListener('blur', function() {
+      // Slight delay so click on popup item registers first
+      setTimeout(function() {
+        if (BB.popupCtx && BB.popupCtx.target === el) BB.closePopup();
+      }, 150);
+    });
+  };
+
+  // Caret position rect for a plain text field (approximate using a mirror div)
+  BB.caretRectForInput = function(el) {
+    var rect = el.getBoundingClientRect();
+    var isTextarea = el.tagName === 'TEXTAREA';
+    if (!isTextarea) {
+      // For <input>, just anchor at bottom-left
+      return { left: rect.left + 8, bottom: rect.bottom, top: rect.top };
+    }
+    // For textarea, use a hidden mirror
+    var mirror = document.getElementById('_bb_caret_mirror');
+    if (!mirror) {
+      mirror = document.createElement('div');
+      mirror.id = '_bb_caret_mirror';
+      mirror.style.position = 'absolute';
+      mirror.style.visibility = 'hidden';
+      mirror.style.whiteSpace = 'pre-wrap';
+      mirror.style.wordWrap   = 'break-word';
+      mirror.style.top = '0px';
+      mirror.style.left = '0px';
+      document.body.appendChild(mirror);
+    }
+    var cs = window.getComputedStyle(el);
+    ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','padding','border','width','boxSizing','wordBreak','whiteSpace'].forEach(function(p) {
+      mirror.style[p] = cs[p];
+    });
+    mirror.style.width = el.clientWidth + 'px';
+    var pos    = el.selectionStart;
+    var before = (el.value || '').substring(0, pos);
+    mirror.textContent = before;
+    var marker = document.createElement('span');
+    marker.textContent = '\u200b';
+    mirror.appendChild(marker);
+    var mRect = marker.getBoundingClientRect();
+    var elRect = el.getBoundingClientRect();
+    return {
+      left:   elRect.left + (mRect.left - mirror.getBoundingClientRect().left) - el.scrollLeft,
+      top:    elRect.top  + (mRect.top  - mirror.getBoundingClientRect().top)  - el.scrollTop,
+      bottom: elRect.top  + (mRect.bottom - mirror.getBoundingClientRect().top) - el.scrollTop
+    };
+  };
+
+  // ── Wiring popup into Monaco editors ──────────────────────────────────────
+  BB.attachToMonaco = function(editor, lang) {
+    if (!editor || editor._bbScAttached) return;
+    editor._bbScAttached = true;
+
+    // Native completion provider — gives best UX in Monaco (uses Monaco's own list)
+    if (window.monaco && window.monaco.languages) {
+      try {
+        window.monaco.languages.registerCompletionItemProvider(lang, {
+          triggerCharacters: [':'],
+          provideCompletionItems: function(model, position) {
+            var line = model.getLineContent(position.lineNumber);
+            var prefix = line.substring(0, position.column - 1);
+            // Need a colon at start of token, not preceded by alpha
+            var m = prefix.match(/(^|[^A-Za-z0-9_])(:[A-Za-z0-9_\-]*)$/);
+            if (!m) return { suggestions: [] };
+            var tok    = m[2];                  // ":foo"
+            var query  = tok.slice(1);          // "foo"
+            var startCol = position.column - tok.length;
+            var range = {
+              startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+              startColumn: startCol, endColumn: position.column
+            };
+            var items = BB.filterSuggestions(query);
+            return {
+              suggestions: items.map(function(s) {
+                return {
+                  label:      s.icon + ' ' + s.label,
+                  detail:     s.cat + ' \u2192 ' + (s.hint || s.value),
+                  insertText: s.value,
+                  kind:       window.monaco.languages.CompletionItemKind.Variable,
+                  range:      range,
+                  filterText: ':' + s.label + ' ' + s.value + ' ' + s.cat
+                };
+              })
+            };
+          }
+        });
+      } catch(e) { console.warn('[bb] Monaco completion register failed:', e); }
+    }
+  };
+
+  // ── Hook into the existing init flow ───────────────────────────────────────
+  // 1. Connect-time hook: after a successful connect, detect version + load registry
+  BB.afterConnect = function() {
+    BB.detectVersion(true).then(function() { return BB.loadRegistry(); }).then(function() {
+      BB.populateDsCredentialsSelect();
+      BB.populateDsSourceSelect();
+    });
+  };
+
+  // 2. After blocks load, refresh registry's blocks (cheap — they're already in memory)
+  BB.afterBlocksLoaded = function() {
+    if (!window.allBlocks) return;
+    BB.registry.blocks = window.allBlocks.map(function(b) {
+      return { id: b.id, name: b.name, type: b.type, iid: 'content-1-' + b.id };
+    });
+    BB.refreshMigrateButton();
+  };
+
+  // 3. After block selection, refresh column suggestions
+  BB.afterBlockSelected = function() {
+    BB.refreshMigrateButton();
+  };
+
+  // ── Version-aware system prompt augmentation ──────────────────────────────
+  BB.versionPromptAddition = function() {
+    var v = BB.activeVersion();
+    if (v === '1.18') {
+      return [
+        '',
+        '# PORTAL VERSION: 1.18 — USE THESE PATTERNS',
+        '- Read block data: `currentBlock.queryResults[0].data` and `currentBlock.queryResults[0].columns`.',
+        '- For multiple queries on one block: `currentBlock.queryResults[index].data`.',
+        '- DO NOT use `currentBlock.data`, `currentBlock.columns` — these are deprecated.',
+        '- For filters: `zPortal.query.setFilter(col, [vals])`, `zPortal.query.removeFilter(col)`, `zPortal.query.clearFilters()`.',
+        '- DO NOT use `zPortal.dataSource.*` — the entire namespace is deprecated. Use `zPortal.query.*`.',
+        '- For ad-hoc fetch: `zPortal.query.getQuery({ queryID }).then(q => { q.onLoad(() => q.getData()); q.fetchData(); })`.',
+        '- Replace `zPortal.layout` with `zPortal.page`, `zPortal.siteConfig` with `zPortal.config`, `currentBlock.siteConfig` with `currentBlock.config`.',
+        '- Wrap render logic in a named function and guard with `if (rows.length) renderChart()`.'
+      ].join('\n');
+    }
+    if (v === '1.17') {
+      return [
+        '',
+        '# PORTAL VERSION: 1.17 — USE THESE PATTERNS',
+        '- Read block data: `currentBlock.data.columns` and `currentBlock.data.data` (row arrays).',
+        '- For filters: `zPortal.dataSource.setFilters(col, [vals])`, `zPortal.dataSource.clearFilters()`.',
+        '- For reactive updates: `zPortal.dataSource.on(\'load\', dsId, payload => { ... })`.',
+        '- DO NOT use `zPortal.query.*` or `currentBlock.queryResults` — these are 1.18-only.'
+      ].join('\n');
+    }
+    return '\n# PORTAL VERSION: unknown — write code that works on 1.17 and 1.18 if possible.';
+  };
+
+  // Wrap the existing buildSystemPrompt() to include version + resolved shortcodes
+  if (typeof window.buildSystemPrompt === 'function') {
+    var _origBuild = window.buildSystemPrompt;
+    window.buildSystemPrompt = function() {
+      return _origBuild() + BB.versionPromptAddition();
+    };
+  }
+
+  // ── Migration logic ───────────────────────────────────────────────────────
+  // Deterministic transforms applied in order. Each entry: { pattern, replacement, label }
+  BB.migrationTransforms = [
+    // currentBlock.data.X — must run before bare currentBlock.data
+    { pattern: /currentBlock\.data\.columns/g,        replacement: 'currentBlock.queryResults[0].columns',       label: 'currentBlock.data.columns → currentBlock.queryResults[0].columns' },
+    { pattern: /currentBlock\.data\.data/g,           replacement: 'currentBlock.queryResults[0].data',           label: 'currentBlock.data.data → currentBlock.queryResults[0].data' },
+    { pattern: /currentBlock\.columns/g,              replacement: 'currentBlock.queryResults[0].columns',       label: 'currentBlock.columns → currentBlock.queryResults[0].columns' },
+    // Optional chaining variants
+    { pattern: /currentBlock\?\.data\?\.columns/g,    replacement: 'currentBlock?.queryResults?.[0]?.columns',   label: 'currentBlock?.data?.columns → currentBlock?.queryResults?.[0]?.columns' },
+    { pattern: /currentBlock\?\.data\?\.data/g,       replacement: 'currentBlock?.queryResults?.[0]?.data',      label: 'currentBlock?.data?.data → currentBlock?.queryResults?.[0]?.data' },
+    // Bare currentBlock.data (after the more-specific ones)
+    { pattern: /currentBlock\.data\b(?!\.|\?)/g,      replacement: 'currentBlock.queryResults[0].data',          label: 'currentBlock.data → currentBlock.queryResults[0].data' },
+    // siteConfig → config
+    { pattern: /currentBlock\.siteConfig/g,           replacement: 'currentBlock.config',                        label: 'currentBlock.siteConfig → currentBlock.config' },
+    { pattern: /zPortal\.siteConfig/g,                replacement: 'zPortal.config',                             label: 'zPortal.siteConfig → zPortal.config' },
+    // layout → page
+    { pattern: /zPortal\.layout\b/g,                  replacement: 'zPortal.page',                               label: 'zPortal.layout → zPortal.page' },
+    // dataSource filter API
+    { pattern: /zPortal\.dataSource\.setFilters\(/g,  replacement: 'zPortal.query.setFilter(',                   label: 'zPortal.dataSource.setFilters( → zPortal.query.setFilter(' },
+    { pattern: /zPortal\.dataSource\.setFilter\(/g,   replacement: 'zPortal.query.setFilter(',                   label: 'zPortal.dataSource.setFilter( → zPortal.query.setFilter(' },
+    { pattern: /zPortal\.dataSource\.setRangeFilters\(/g, replacement: 'zPortal.query.setRangeFilter(',           label: 'zPortal.dataSource.setRangeFilters( → zPortal.query.setRangeFilter(' },
+    { pattern: /zPortal\.dataSource\.clearFilters\(\)/g,   replacement: 'zPortal.query.clearFilters()',          label: 'zPortal.dataSource.clearFilters() → zPortal.query.clearFilters()' },
+    // dataSource columns access (only the .columns chain — don't blanket-replace .get())
+    { pattern: /zPortal\.dataSource\.get\(([^)]*)\)\.columns/g, replacement: 'currentBlock.queryResults[0].columns', label: 'zPortal.dataSource.get(...).columns → currentBlock.queryResults[0].columns' },
+    // block.getData → currentBlock.queryResults[0].data (single block uses)
+    { pattern: /zPortal\.block\.getData\(([^)]*)\)/g, replacement: 'currentBlock.queryResults[0].data /* was: zPortal.block.getData($1) */', label: 'zPortal.block.getData(...) → currentBlock.queryResults[0].data (commented original)' }
+  ];
+
+  BB.computeMigration = function(source) {
+    var out = source;
+    var changes = [];
+    BB.migrationTransforms.forEach(function(t) {
+      var matches = out.match(t.pattern);
+      if (matches && matches.length) {
+        out = out.replace(t.pattern, t.replacement);
+        changes.push({ label: t.label, count: matches.length });
+      }
+    });
+    return { transformed: out, changes: changes };
+  };
+
+  // Show / hide migrate button based on version + content
+  BB.refreshMigrateButton = function() {
+    var btn = document.getElementById('btn-migrate');
+    if (!btn) return;
+    var ver = BB.activeVersion();
+    if (ver !== '1.18') { btn.style.display = 'none'; return; }
+    var b = window.currentBlock;
+    if (!b) { btn.style.display = 'none'; return; }
+    // Read current editor content (may include unsaved changes)
+    var html = (window.monacoHTML && window.monacoHTML.getValue()) || '';
+    var css  = (window.monacoCSS  && window.monacoCSS.getValue())  || '';
+    var rep  = BB.computeMigration(html + '\n/*CSS*/\n' + css);
+    btn.style.display = rep.changes.length ? '' : 'none';
+    if (rep.changes.length) {
+      btn.title = 'This block uses ' + rep.changes.length + ' deprecated 1.17 pattern(s) — click to migrate';
+    }
+  };
+
+  // ── Migrate modal handlers (exposed via window) ───────────────────────────
+  var _migrateState = null;
+  window.openMigrateModal = function() {
+    if (!window.currentBlock) return;
+    var html  = (window.monacoHTML && window.monacoHTML.getValue()) || '';
+    var css   = (window.monacoCSS  && window.monacoCSS.getValue())  || '';
+    var hRep  = BB.computeMigration(html);
+    var cRep  = BB.computeMigration(css);
+    _migrateState = {
+      origHtml: html, origCss: css,
+      newHtml:  hRep.transformed, newCss:  cRep.transformed,
+      changes:  hRep.changes.concat(cRep.changes),
+      tab: 'html'
+    };
+    document.getElementById('migrate-block-info').textContent = window.currentBlock.name + '  (' + (window.currentBlock.type || '') + ')';
+    // Block-level structural note (data → ui_queries)
+    var hasLegacyData = window.currentBlock.data && window.currentBlock.data.__source__;
+    var summary = _migrateState.changes.length
+      ? _migrateState.changes.length + ' transform group(s) will be applied. Review the diff below before applying.'
+      : 'No code-level deprecated patterns found in this block.';
+    if (hasLegacyData) {
+      summary += '  ⚠ This block still uses the 1.17 top-level `data` config (datasource: ' +
+                 String(window.currentBlock.data.__source__).slice(0, 8) +
+                 '…). 1.18 expects `ui_queries: [{ query_id, ... }]` instead. ' +
+                 'Create a Query for this datasource on the portal and re-attach via the Query tab — the JS-level transforms below will handle the rest.';
+    }
+    document.getElementById('migrate-summary').textContent = summary;
+    var totalCounts = {};
+    _migrateState.changes.forEach(function(c) { totalCounts[c.label] = (totalCounts[c.label] || 0) + c.count; });
+    document.getElementById('migrate-changes').innerHTML = Object.keys(totalCounts).map(function(label) {
+      var parts = label.split(' → ');
+      return '<div class="migrate-change-row">' +
+               '<span class="mc-count">\u00D7' + totalCounts[label] + '</span>' +
+               '<span class="mc-from">' + esc(parts[0] || label) + '</span>' +
+               '<span class="mc-arrow">\u2192</span>' +
+               '<span class="mc-to">' + esc(parts[1] || '') + '</span>' +
+             '</div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text-dim);padding:8px">Nothing to migrate.</div>';
+    document.getElementById('migrate-apply-btn').disabled = !_migrateState.changes.length;
+    document.getElementById('migrate-status').style.display = 'none';
+    BB.renderMigrateDiff();
+    document.getElementById('migrate-overlay').classList.add('open');
+  };
+
+  window.closeMigrateModal = function() {
+    document.getElementById('migrate-overlay').classList.remove('open');
+    _migrateState = null;
+  };
+
+  window.switchMigrateTab = function(tab) {
+    if (!_migrateState) return;
+    _migrateState.tab = tab;
+    document.getElementById('migrate-tab-html').classList.toggle('active', tab === 'html');
+    document.getElementById('migrate-tab-css').classList.toggle('active',  tab === 'css');
+    BB.renderMigrateDiff();
+  };
+
+  BB.renderMigrateDiff = function() {
+    if (!_migrateState) return;
+    var orig = _migrateState.tab === 'html' ? _migrateState.origHtml : _migrateState.origCss;
+    var next = _migrateState.tab === 'html' ? _migrateState.newHtml  : _migrateState.newCss;
+    if (orig === next) {
+      document.getElementById('migrate-diff').innerHTML = '<div style="padding:14px;color:var(--text-dim);font-size:12px">No changes in this section.</div>';
+      return;
+    }
+    // Reuse buildDiff() if available
+    if (typeof window.buildDiff === 'function') {
+      document.getElementById('migrate-diff').innerHTML = window.buildDiff(orig, next);
+    } else {
+      document.getElementById('migrate-diff').textContent = next;
+    }
+  };
+
+  window.applyMigration = function() {
+    if (!_migrateState) return;
+    if (window.monacoHTML) window.monacoHTML.setValue(_migrateState.newHtml);
+    if (window.monacoCSS)  window.monacoCSS.setValue(_migrateState.newCss);
+    if (typeof window.markDirty === 'function') window.markDirty();
+    var st = document.getElementById('migrate-status');
+    st.textContent = '\u2713 Applied to editor. Click Save to persist.';
+    st.className = 'push-status ok'; st.style.display = 'block';
+    setTimeout(function() { window.closeMigrateModal(); BB.refreshMigrateButton(); }, 1200);
+  };
+
+  // ── DS / Query creation modal ─────────────────────────────────────────────
+  var _dsState = { mode: 'datasource' };
+
+  BB.updateDsTabs = function() {
+    var queryTab = document.getElementById('ds-tab-query');
+    if (queryTab) queryTab.style.display = (BB.activeVersion() === '1.18') ? '' : 'none';
+    // Hide source-select unless query mode
+    var srcWrap = document.getElementById('ds-source-wrap');
+    if (srcWrap) srcWrap.style.display = (_dsState.mode === 'query') ? '' : 'none';
+  };
+
+  BB.populateDsCredentialsSelect = function() {
+    var sel = document.getElementById('ds-credential');
+    if (!sel) return;
+    if (!BB.registry.credentials.length) {
+      sel.innerHTML = '<option value="">No credentials available</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">Select a credential&hellip;</option>' +
+      BB.registry.credentials.map(function(c) {
+        return '<option value="' + esc(c.id) + '">' + esc(c.name) + ' (' + esc(c.type || '') + ')</option>';
+      }).join('');
+  };
+
+  BB.populateDsSourceSelect = function() {
+    var sel = document.getElementById('ds-source');
+    if (!sel) return;
+    if (!BB.registry.datasources.length) {
+      sel.innerHTML = '<option value="">No datasources yet</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">Select a datasource&hellip;</option>' +
+      BB.registry.datasources.map(function(d) {
+        return '<option value="' + esc(d.id) + '">' + esc(d.name) + '</option>';
+      }).join('');
+  };
+
+  window.openDsModal = function() {
+    _dsState = { mode: 'datasource', testResult: null };
+    document.getElementById('ds-name').value = '';
+    document.getElementById('ds-sql').value  = '';
+    document.getElementById('ds-status').textContent = '';
+    document.getElementById('ds-status').className   = 'ds-status info';
+    document.getElementById('ds-preview').innerHTML  = '<div class="ds-preview-empty">Click <strong>Test Run</strong> to preview the first 5 rows.</div>';
+    BB.populateDsCredentialsSelect();
+    BB.populateDsSourceSelect();
+    BB.updateDsTabs();
+    document.getElementById('ds-modal-title').textContent = '+ New Datasource';
+    document.getElementById('ds-tab-datasource').classList.add('active');
+    document.getElementById('ds-tab-query').classList.remove('active');
+    document.getElementById('ds-overlay').classList.add('open');
+    setTimeout(function() { document.getElementById('ds-name').focus(); }, 50);
+  };
+
+  window.closeDsModal = function() {
+    document.getElementById('ds-overlay').classList.remove('open');
+  };
+
+  window.switchDsTab = function(mode) {
+    if (mode === 'query' && BB.activeVersion() !== '1.18') return;
+    _dsState.mode = mode;
+    document.getElementById('ds-tab-datasource').classList.toggle('active', mode === 'datasource');
+    document.getElementById('ds-tab-query').classList.toggle('active',     mode === 'query');
+    document.getElementById('ds-modal-title').textContent = mode === 'query' ? '+ New Query (1.18)' : '+ New Datasource';
+    BB.updateDsTabs();
+  };
+
+  function setDsStatus(msg, type) {
+    var s = document.getElementById('ds-status');
+    s.textContent = msg;
+    s.className = 'ds-status ' + (type || 'info');
+  }
+
+  function renderDsPreview(columns, rows) {
+    var pv = document.getElementById('ds-preview');
+    if (!rows || !rows.length) {
+      pv.innerHTML = '<div class="ds-preview-empty">Query returned 0 rows.</div>';
+      return;
+    }
+    var colNames = columns.map(function(c) { return typeof c === 'object' ? (c.name || '') : c; });
+    var html = '<table><thead><tr>';
+    colNames.forEach(function(n) { html += '<th>' + esc(n) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    rows.slice(0, 5).forEach(function(row) {
+      html += '<tr>';
+      row.forEach(function(cell) {
+        var val = cell === null || cell === undefined ? '<span style="opacity:.4">null</span>' : esc(String(cell));
+        html += '<td>' + val + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    pv.innerHTML = html;
+  }
+
+  window.testDsRun = function() {
+    var name = document.getElementById('ds-name').value.trim();
+    var sql  = document.getElementById('ds-sql').value.trim();
+    var cred = document.getElementById('ds-credential').value;
+    var src  = document.getElementById('ds-source').value;
+    if (!sql) { setDsStatus('SQL is required.', 'err'); return; }
+    setDsStatus('Running\u2026', 'info');
+    var btn = document.getElementById('ds-test-btn'); btn.disabled = true;
+
+    if (_dsState.mode === 'query' && BB.activeVersion() === '1.18') {
+      // Use POST /api/queries/execute (ad-hoc, no save needed)
+      var body = {
+        query: { raw_sql: sql, datasources: src ? [{ id: src, alias: 'main' }] : [] },
+        response_control: { include_count: false, include_params_details: false, include_columns: true }
+      };
+      fetch('/api/proxy/api/queries/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(res) {
+        btn.disabled = false;
+        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Query failed', 'err'); return; }
+        renderDsPreview(res.data.columns || [], res.data.data || []);
+        setDsStatus('\u2713 ' + (res.data.data || []).length + ' row(s)', 'ok');
+      })
+      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
+    } else {
+      // Datasource ad-hoc: there's no portal endpoint to run un-saved SQL on a credential,
+      // so we save a temp datasource, fetch its data, then delete it.
+      if (!cred) { setDsStatus('Credential is required to test.', 'err'); btn.disabled = false; return; }
+      var tempName = (name || 'untitled') + ' [test ' + Date.now().toString(36) + ']';
+      var dsBody = {
+        name: tempName, sql: sql, json_data: {},
+        database_connection: { type: 'stored', id: cred }
+      };
+      fetch('/api/proxy/api/datasources', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dsBody)
+      })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(c) {
+        if (!c.ok) throw new Error((c.data && (c.data.detail || c.data.error)) || 'Create failed');
+        var dsId = c.data.id;
+        return fetch('/api/proxy/api/datasources/' + dsId + '/data', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filters: {}, queries: [{ columns: ['*'], limit: 5 }] })
+        }).then(function(r2) { return r2.json().then(function(d2) { return { ok: r2.ok, data: d2, tempId: dsId }; }); });
+      })
+      .then(function(d) {
+        // Always delete the temp datasource
+        if (d.tempId) {
+          fetch('/api/proxy/api/datasources/' + d.tempId, { method: 'DELETE' }).catch(function(){});
+        }
+        btn.disabled = false;
+        if (!d.ok) { setDsStatus((d.data && (d.data.detail || d.data.error)) || 'Test query failed', 'err'); return; }
+        var result = d.data.results && d.data.results[0];
+        if (!result) { setDsStatus('No result returned.', 'err'); return; }
+        renderDsPreview(result.columns || [], result.data || []);
+        setDsStatus('\u2713 ' + (result.data || []).length + ' row(s)', 'ok');
+      })
+      .catch(function(e) { btn.disabled = false; setDsStatus(e.message, 'err'); });
+    }
+  };
+
+  window.saveDs = function() {
+    var name = document.getElementById('ds-name').value.trim();
+    var sql  = document.getElementById('ds-sql').value.trim();
+    var cred = document.getElementById('ds-credential').value;
+    var src  = document.getElementById('ds-source').value;
+    if (!name) { setDsStatus('Name is required.', 'err'); return; }
+    if (!sql)  { setDsStatus('SQL is required.', 'err'); return; }
+    var btn = document.getElementById('ds-save-btn'); btn.disabled = true;
+    setDsStatus('Saving\u2026', 'info');
+
+    if (_dsState.mode === 'query' && BB.activeVersion() === '1.18') {
+      var body = {
+        raw_sql: sql,
+        datasources: src ? [{ id: src, alias: 'main' }] : []
+      };
+      fetch('/api/proxy/api/queries', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(res) {
+        btn.disabled = false;
+        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Create failed', 'err'); return; }
+        setDsStatus('\u2713 Query created (' + res.data.id.slice(0, 8) + ')', 'ok');
+        BB.loadRegistry();
+        setTimeout(window.closeDsModal, 900);
+      })
+      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
+    } else {
+      if (!cred) { setDsStatus('Credential is required.', 'err'); btn.disabled = false; return; }
+      var dsBody = { name: name, sql: sql, json_data: {}, database_connection: { type: 'stored', id: cred } };
+      fetch('/api/proxy/api/datasources', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dsBody)
+      })
+      .then(function(r) { return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(res) {
+        btn.disabled = false;
+        if (!res.ok) { setDsStatus((res.data && (res.data.detail || res.data.error)) || 'Create failed', 'err'); return; }
+        setDsStatus('\u2713 Datasource created (' + res.data.id.slice(0, 8) + ')', 'ok');
+        BB.loadRegistry();
+        setTimeout(window.closeDsModal, 900);
+      })
+      .catch(function(e) { btn.disabled = false; setDsStatus('Network error: ' + e.message, 'err'); });
+    }
+  };
+
+  // ── Hook into existing UI lifecycle ────────────────────────────────────────
+  // Wrap setConnected to trigger version detect + registry load
+  if (typeof window.setConnected === 'function') {
+    var _origSetConnected = window.setConnected;
+    window.setConnected = function(url) {
+      _origSetConnected(url);
+      BB.afterConnect();
+    };
+  }
+
+  // Wrap loadBlocks completion via a polling check (loadBlocks is fetch-based)
+  if (typeof window.loadBlocks === 'function') {
+    var _origLoadBlocks = window.loadBlocks;
+    window.loadBlocks = function() {
+      var ret = _origLoadBlocks.apply(this, arguments);
+      // After blocks finish loading they're in window.allBlocks
+      var tries = 0;
+      var iv = setInterval(function() {
+        tries++;
+        if (window.allBlocks && window.allBlocks.length) {
+          clearInterval(iv);
+          BB.afterBlocksLoaded();
+        } else if (tries > 40) { clearInterval(iv); }
+      }, 150);
+      return ret;
+    };
+  }
+
+  // Wrap doSelectBlock to refresh migrate button + columns after block loads
+  if (typeof window.doSelectBlock === 'function') {
+    var _origDoSelect = window.doSelectBlock;
+    window.doSelectBlock = function(id) {
+      _origDoSelect(id);
+      // The data preview fetch is async — give it a moment then refresh
+      setTimeout(BB.afterBlockSelected, 50);
+      setTimeout(BB.afterBlockSelected, 800);
+    };
+  }
+
+  // Wrap markDirty so migrate button reflects un-saved code changes
+  if (typeof window.markDirty === 'function') {
+    var _origMarkDirty = window.markDirty;
+    window.markDirty = function() {
+      _origMarkDirty();
+      // Throttle
+      if (BB._dirtyTimer) clearTimeout(BB._dirtyTimer);
+      BB._dirtyTimer = setTimeout(BB.refreshMigrateButton, 400);
+    };
+  }
+
+  // Wrap loadPortalForm + savePortalForm to handle version_override
+  if (typeof window.loadPortalForm === 'function') {
+    var _origLoadPortalForm = window.loadPortalForm;
+    window.loadPortalForm = function(idx) {
+      _origLoadPortalForm(idx);
+      var p = window.savedPortals && window.savedPortals[idx];
+      if (!p) return;
+      var sel = document.getElementById('cfg-portal-version');
+      if (sel) sel.value = p.version_override || 'auto';
+      var det = document.getElementById('cfg-portal-version-detected');
+      if (det) {
+        var raw = p.detected_version_raw ? '  (' + p.detected_version_raw + ')' : '';
+        det.textContent = (p.detected_version || 'not yet detected') + raw;
+      }
+    };
+  }
+  if (typeof window.savePortalForm === 'function') {
+    var _origSavePortalForm = window.savePortalForm;
+    window.savePortalForm = function() {
+      // Capture override before parent save (which rewrites the entry)
+      var sel = document.getElementById('cfg-portal-version');
+      var ov  = sel ? sel.value : 'auto';
+      _origSavePortalForm();
+      // Re-attach override + detected fields onto the just-saved entry
+      var idx = window.editingPortalIdx;
+      if (idx >= 0 && window.savedPortals && window.savedPortals[idx]) {
+        window.savedPortals[idx].version_override = (ov === '1.17' || ov === '1.18') ? ov : null;
+        if (typeof window.persistConfig === 'function') window.persistConfig(function(){});
+      }
+      BB.updateVersionPill();
+      BB.refreshMigrateButton();
+    };
+  }
+
+  // ── Attach popup to all known text fields once Monaco + DOM are ready ─────
+  function wireShortcodes() {
+    ['block-name-input', 'chat-input', 'ds-name', 'ds-sql', 'rule-new-input'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) BB.attachToTextField(el);
+    });
+    if (window.monacoHTML) BB.attachToMonaco(window.monacoHTML, 'html');
+    if (window.monacoCSS)  BB.attachToMonaco(window.monacoCSS,  'css');
+  }
+
+  // Click outside popup → close
+  document.addEventListener('mousedown', function(e) {
+    var pop = document.getElementById('sc-popup');
+    if (!pop || !pop.classList.contains('open')) return;
+    if (pop.contains(e.target)) return;
+    // Don't close if click is on the field that owns the popup
+    if (BB.popupCtx && BB.popupCtx.target && BB.popupCtx.target.contains && BB.popupCtx.target.contains(e.target)) return;
+    BB.closePopup();
+  });
+
+  // Modal close on backdrop
+  ['migrate-overlay', 'ds-overlay'].forEach(function(id) {
+    var ov = document.getElementById(id);
+    if (ov) ov.addEventListener('click', function(e) {
+      if (e.target === ov) {
+        if (id === 'migrate-overlay') window.closeMigrateModal();
+        else window.closeDsModal();
+      }
+    });
+  });
+
+  // Boot — wait until Monaco init has happened
+  window.addEventListener('DOMContentLoaded', function() {
+    var tries = 0;
+    var iv = setInterval(function() {
+      tries++;
+      if ((window.monacoHTML && window.monacoCSS) || tries > 60) {
+        clearInterval(iv);
+        wireShortcodes();
+        BB.updateVersionPill();
+      }
+    }, 150);
+  });
+
+  // Re-wire shortcodes after AI view toggles (chat-input may re-mount visually but element persists)
+  // Also expose for manual re-wiring after dynamic UI changes.
+  BB.rewireShortcodes = wireShortcodes;
+})();
+</script>
+</body>
+</html>
