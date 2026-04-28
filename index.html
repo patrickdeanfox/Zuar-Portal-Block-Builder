@@ -3371,20 +3371,58 @@ function esc(str) {
   }
 
   // ── Datasource form ──────────────────────────────────────────────────────
+  // Look across the various field shapes the portal might return for a saved
+  // credential reference. Returns the credential UUID or '' if not found.
+  function readSavedCredentialId(item) {
+    if (!item) return '';
+    var conn = item.database_connection || item.databaseConnection || null;
+    if (conn && typeof conn === 'object') {
+      if (conn.type === 'stored' && conn.id) return conn.id;
+      if (conn.id)            return conn.id;
+      if (conn.credential_id) return conn.credential_id;
+      if (conn.credentials_id) return conn.credentials_id;
+    }
+    if (item.credential_id)  return item.credential_id;
+    if (item.credentials_id) return item.credentials_id;
+    return '';
+  }
+
   DS.renderDatasourceForm = function() {
     var item = DS.state.item || {};
     var name = item.name || '';
     var sql  = item.sql  || '';
-    var conn = item.database_connection || { type: 'stored', id: '' };
-    var credId = (conn.type === 'stored') ? (conn.id || '') : '';
-    var body = renderShell({ kindLabel: 'Datasource', name: name, allowDelete: true, allowTest: true });
+    var credId = readSavedCredentialId(item);
+    var isNew  = DS.state.id == null;
+    var body = renderShell({ kindLabel: 'Datasource', name: name, allowDelete: !isNew, allowTest: true });
 
-    var credOpts = '<option value="">Select a credential\u2026</option>' +
+    // Look up the saved credential in the list. If it isn't there (e.g. list
+    // hasn't refreshed, or the credential was filtered/removed), still show
+    // it as a labelled option so the user can see the record is attached.
+    var savedCred = credId ? (DS.state.credentials.filter(function(c) { return c.id === credId; })[0]) : null;
+    var savedOptionHtml = '';
+    if (credId && !savedCred) {
+      savedOptionHtml = '<option value="' + esc(credId) + '" selected>' +
+        '\u2713 Saved credential (' + esc(credId.slice(0, 8)) + '\u2026) \u2014 not in current list' +
+      '</option>';
+    }
+
+    var credOpts =
+      (isNew ? '<option value="">Select a credential\u2026</option>' :
+               (credId ? '' : '<option value="">Select a credential\u2026</option>')) +
+      savedOptionHtml +
       DS.state.credentials.map(function(c) {
         return '<option value="' + esc(c.id) + '"' + (c.id === credId ? ' selected' : '') + '>' +
                  esc(c.name) + ' (' + esc(c.type || '') + ')' +
                '</option>';
       }).join('');
+
+    var credCaption = isNew
+      ? '<div class="ds-readonly-note">Pick which database connection runs this SQL.</div>'
+      : (savedCred
+          ? '<div class="ds-readonly-note">Loaded from saved record \u2014 \u201c' + esc(savedCred.name) + '\u201d (' + esc(savedCred.type || '') + '). Change only if you need to point this DS at a different connection.</div>'
+          : (credId
+              ? '<div class="ds-readonly-note">Saved credential ID is set but isn\u2019t in the current credentials list. <a href="#" onclick="BB.dsModal.refreshLists().then(function(){BB.dsModal.renderForm()});return false">Refresh credentials</a>.</div>'
+              : '<div class="ds-readonly-note" style="color:var(--yellow)">No credential is associated with this datasource. Pick one before saving.</div>'));
 
     body.innerHTML =
       '<div class="form-group">' +
@@ -3392,8 +3430,9 @@ function esc(str) {
         '<input type="text" id="ds-f-name" value="' + esc(name) + '" placeholder="e.g. orders_by_state"/>' +
       '</div>' +
       '<div class="form-group">' +
-        '<label>Credential / Connection</label>' +
+        '<label>Credential / Connection' + (isNew ? '' : ' <span style="color:var(--text-dim);font-weight:400;text-transform:none">\u2014 prefilled from saved record</span>') + '</label>' +
         '<select id="ds-f-credential">' + credOpts + '</select>' +
+        credCaption +
       '</div>' +
       '<div class="form-group">' +
         '<label>SQL</label>' +
@@ -3528,7 +3567,16 @@ function esc(str) {
     if (!name) { setPaneStatus('Name is required.', 'err'); return; }
     if (!sql)  { setPaneStatus('SQL is required.',  'err'); return; }
     if (!cred) { setPaneStatus('Credential is required.', 'err'); return; }
-    var body = { name: name, sql: sql, json_data: {}, database_connection: { type: 'stored', id: cred } };
+    // Preserve fields we don't surface in the form (json_data, tags, etc.) on updates.
+    var existing = DS.state.item || {};
+    var body = Object.assign({}, existing, {
+      name: name,
+      sql:  sql,
+      json_data: existing.json_data || {},
+      database_connection: { type: 'stored', id: cred }
+    });
+    // Strip server-managed fields so we don't send them back as part of an update
+    delete body.id; delete body.created_at; delete body.updated_at; delete body.owner_id;
     var btn  = document.getElementById('ds-save-btn'); btn.disabled = true;
     setPaneStatus('Saving\u2026', 'info');
     var isNew = DS.state.id == null;
