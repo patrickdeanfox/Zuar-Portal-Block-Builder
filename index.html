@@ -2456,13 +2456,18 @@ function persistConfig(cb) {
       cfg.portal_url    = active.portal_url   || '';
       cfg.api_key       = active.api_key       || '';
       cfg.user_id       = active.user_id       || '';
-      cfg.anthropic_key = active.anthropic_key || cfg.anthropic_key || '';
+      // Anthropic key only gets overwritten if the portal entry has one — a
+      // blank field on the portal entry must not wipe a previously-saved key.
+      var newAnthKey = (active.anthropic_key || '').trim();
+      var oldAnthKey = (cfg.anthropic && cfg.anthropic.apiKey) || cfg.anthropic_key || '';
+      var keepAnth   = newAnthKey || oldAnthKey;
+      cfg.anthropic_key = keepAnth;
       cfg.portal = {
         url:    active.portal_url || '',
         apiKey: active.api_key    || '',
         userId: active.user_id    || ''
       };
-      cfg.anthropic = { apiKey: active.anthropic_key || '' };
+      cfg.anthropic = Object.assign({}, cfg.anthropic || {}, { apiKey: keepAnth });
     }
     return fetch('/api/config', {
       method: 'POST',

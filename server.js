@@ -315,6 +315,8 @@ app.all('/api/proxy/*', async (req, res) => {
     }
   }
 
+  const portalApiKey = cfg.portal?.apiKey || '';
+
   const doRequest = (cookie) => new Promise((resolve, reject) => {
     const downstreamPath = req.path.replace(/^\/api\/proxy/, '') || '/';
     const query          = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
@@ -327,7 +329,12 @@ app.all('/api/proxy/*', async (req, res) => {
       'Content-Type': 'application/json',
       'Accept':       'application/json',
     };
-    if (cookie) headers['Cookie'] = cookie;
+    if (cookie)         headers['Cookie']     = cookie;
+    // Also send the portal API key as a header — some Zuar portal versions
+    // require this in addition to (or instead of) the JWT session cookie. With
+    // both present, cookie auth wins; if it expires, X-Api-Key takes over and
+    // the portal stops returning "invalid x-api-key" errors.
+    if (portalApiKey)   headers['X-Api-Key']  = portalApiKey;
 
     const options = {
       hostname: parsed.hostname,
